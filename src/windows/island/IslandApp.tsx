@@ -9,6 +9,7 @@ import { useTranslation } from "../../i18n";
 import { useSettingsPresentation } from "../settings/useSettingsPresentation";
 import { useSettingsNavigation } from "./useSettingsNavigation";
 import { useIslandSettings } from "../../features/appearance/useIslandSettings";
+import { useMemoryModeSync } from "../../features/appearance/useMemoryModeSync";
 import { useDocumentTheme } from "../../features/appearance/useDocumentTheme";
 import { resolveSchemeColors } from "../../features/appearance/theme";
 import { useClipboardHistory } from "../../features/clipboard/useClipboardHistory";
@@ -59,6 +60,7 @@ export function IslandApp() {
   const navigation = useIslandNavigation();
   const { mode, isTucked, page, setPage, collapseIsland, tuckIsland, revealIsland, minimizeToEdge, openIslandPage, toggleClipboardHistory } = navigation;
   const [settings, setSettings] = useIslandSettings();
+  useMemoryModeSync(settings.memoryMode);
   const detachedSettings = useSettingsPresentation();
   const { openSettings, changePresentation } = useSettingsNavigation(openIslandPage, setPage);
   const { settingsContentHeight, reportSettingsHeight } = useSettingsPageHeight();

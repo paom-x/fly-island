@@ -3,6 +3,7 @@ import { SettingsGroup } from "../../components/settings/SettingsGroup";
 import { BehaviorSettingsSection } from "../../features/appearance/BehaviorSettingsSection";
 import { ExpandRows, GameModeRow, PositionRows, TuckRows } from "../../features/appearance/IslandBehaviorRows";
 import { KeepVisibleRows } from "../../features/appearance/KeepVisibleRows";
+import { MemoryModeRow } from "../../features/appearance/MemoryModeRow";
 import type { IslandSettings } from "../../features/appearance/types";
 import { requestIslandPositionReset } from "./storage";
 import { useLaunchAtStartup } from "./useLaunchAtStartup";
@@ -63,6 +64,9 @@ export function GeneralSettingsPage({
       </SettingsGroup>
       <SettingsGroup title={t.settings.layout.gameTitle}>
         <GameModeRow {...rows} />
+      </SettingsGroup>
+      <SettingsGroup title={t.settings.memory.title}>
+        <MemoryModeRow {...rows} />
       </SettingsGroup>
       <ConfigTransferSection />
     </>

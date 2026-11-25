@@ -25,6 +25,7 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
     messageExpandSeconds: wholeSeconds(settings?.messageExpandSeconds, MESSAGE_EXPAND_SECONDS, MESSAGE_EXPAND_SECONDS.default),
     gameShowNotices: settings?.gameShowNotices === true,
     gameNoticeSeconds: wholeSeconds(settings?.gameNoticeSeconds, GAME_NOTICE_SECONDS, GAME_NOTICE_SECONDS.default),
+    memoryMode: oneOf(["saver", "balanced", "smooth"] as const, settings?.memoryMode, DEFAULT_SETTINGS.memoryMode),
     todoTimerReminder: settings?.todoTimerReminder === true,
     todoTimerReminderSound: settings?.todoTimerReminderSound === true,
     carryOverIncompleteTodos:

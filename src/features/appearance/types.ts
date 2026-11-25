@@ -23,6 +23,11 @@ export type MinimizeAction = "tray" | "tuck";
 /** Retired: no longer in Settings, always loads as "reveal"; tucked hover now follows ExpandTrigger (tuckedHover.ts). */
 export type TuckedHoverAction = "reveal" | "expand";
 export type TuckStyle = "edge" | "line" | "hidden";
+/**
+ * How hard the island hands the browser's memory back to Windows while it is collapsed:
+ * "saver" trims soonest, "balanced" is the default, "smooth" never trims (src-tauri/src/memory_trim.rs).
+ */
+export type MemoryMode = "saver" | "balanced" | "smooth";
 /** How the Agent page shows the program a session runs in. */
 export type AgentHostDisplay = "both" | "icon" | "name" | "off";
 /** How the Agent page shows sessions: flat rows, two-line cards framed in their light, or one-line rows. */
@@ -246,6 +251,8 @@ export type IslandSettings = {
   gameDoNotDisturb: boolean;
   /** While a full-screen app is in front, the island tucks to the top edge and comes back after. */
   gameAutoTuck: boolean;
+  /** How soon the collapsed island hands the browser's memory back to Windows. */
+  memoryMode: MemoryMode;
   /** Ctrl + mouse wheel over the expanded island switches its page. */
   ctrlWheelPages: boolean;
   /** Clipboard: rows visible in the island before scrolling (3–8). */

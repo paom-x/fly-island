@@ -167,6 +167,7 @@ pub fn run() {
             ; app_log
             ; config_transfer
             ; weather
+            ; memory_trim
         ))
         .build(context)
         .map(|app| {

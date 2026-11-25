@@ -24,6 +24,7 @@ import type { SettingsAppearancePresetsText } from "./appearancePresets";
 import type { SettingsSaveText } from "./save";
 import type { SettingsSoundsText } from "./sounds";
 import type { SettingsDiagnosticsText } from "./diagnostics";
+import type { SettingsMemoryText } from "./memory";
 import type { SettingsConfigTransferText } from "./configTransfer";
 import * as fileShelf from "./fileShelf.ts";
 import * as modules from "./modules.ts";
@@ -51,6 +52,7 @@ import * as appearancePresets from "./appearancePresets.ts";
 import * as save from "./save.ts";
 import * as sounds from "./sounds.ts";
 import * as diagnostics from "./diagnostics.ts";
+import * as memory from "./memory.ts";
 import * as configTransfer from "./configTransfer.ts";
 
 export type SettingsText = {
@@ -102,6 +104,8 @@ export type SettingsText = {
   save: SettingsSaveText;
   sounds: SettingsSoundsText;
   diagnostics: SettingsDiagnosticsText;
+
+  memory: SettingsMemoryText;
 };
 
 export const zhCN: SettingsText = {
@@ -152,6 +156,8 @@ export const zhCN: SettingsText = {
   save: save.zhCN,
   sounds: sounds.zhCN,
   diagnostics: diagnostics.zhCN,
+
+  memory: memory.zhCN,
 };
 
 export const en: SettingsText = {
@@ -202,4 +208,6 @@ export const en: SettingsText = {
   save: save.en,
   sounds: sounds.en,
   diagnostics: diagnostics.en,
+
+  memory: memory.en,
 };
