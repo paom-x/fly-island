@@ -159,3 +159,20 @@
 - 源码保持项目当前编码风格；中文文档使用 UTF-8。
 - README 包含中英文说明，更新时不要破坏现有的双语结构。
 - 界面方向的决定记录在 `DESIGN.md`（全局方向）和 `docs/design/<区域>.md`（各区域，改哪块只改那一份）；功能专题文档放在 `docs/`；架构变化更新 `docs/architecture/overview.md`，数据存放位置写进 `data-storage.md`，对外契约（localStorage key、事件、命令、文件格式）写进 `contracts.md`。
+
+### 本 fork 的文档映射与差异说明
+
+上游的文档体系不设独立的《技术文档》《软件内说明书》两册，而是按主题分册。本 fork 沿用上游布局、不另建同名文件，按四份文档的职责做如下映射（`~/.dsh/AGENTS.md` 3.3 与附录 A.1 允许既有分册沿用并在此登记）：
+
+| 文档 | 实际路径 | 维护人/更新触发 | 最近审计日期 |
+| --- | --- | --- | --- |
+| 《项目说明文档》 | `README.md`（另 `README.en.md`） | 功能、环境要求、构建方式变更 | 2026-11-25 |
+| 《技术文档》 | 分册：`docs/architecture/overview.md`（架构）、`contracts.md`（对外契约）、`data-storage.md`（数据存放）、`docs/plugins/*`（插件 API 与清单）、`src/AGENTS.md` 与 `src-tauri/AGENTS.md`（分层与边界） | 架构、接口、配置变更 | 2026-11-25 |
+| 《软件内说明书》 | 分册：`README.md` 的功能章节 + `docs/design/<区域>.md`（界面行为）+ `docs/*.md` 专题（如 `file-shelf.md`、`todo-timer.md`） | 界面、文案、参数变更 | 2026-11-25 |
+| `AGENTS.md` | `AGENTS.md`（含本表） | 工程约定变更 | 2026-11-25 |
+
+差异说明：
+
+- 工作区根目录为上游仓库的直接 clone，远端只有 `https://github.com/flyl1u/fly-island.git` 且无推送权限，因此第 3.6 条「当日提交并推送远端」中的**推送部分在本 fork 不适用**；提交仍按「一个可验证功能单元一个提交」执行，推送待建立自有远端后再补。推送失败登记落点仍为 `$DSH_HOME/push-pending.md`。
+- 版本号只改三处：`package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`。
+
