@@ -173,6 +173,6 @@
 
 差异说明：
 
-- 工作区根目录为上游仓库的直接 clone，远端只有 `https://github.com/flyl1u/fly-island.git` 且无推送权限，因此第 3.6 条「当日提交并推送远端」中的**推送部分在本 fork 不适用**；提交仍按「一个可验证功能单元一个提交」执行，推送待建立自有远端后再补。推送失败登记落点仍为 `$DSH_HOME/push-pending.md`。
+- 远端两个：`origin` 是自有 fork `https://github.com/paom-x/fly-island.git`（可推送，`main` 跟踪它），`upstream` 指向上游 `https://github.com/flyl1u/fly-island.git`（只读，不要推）。第 3.6 条的「当日提交并推送远端」按 `origin` 执行；从上游取更新用 `git fetch upstream`。推送失败登记落点仍为 `$DSH_HOME/push-pending.md`。
 - 版本号只改三处：`package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`。
 
