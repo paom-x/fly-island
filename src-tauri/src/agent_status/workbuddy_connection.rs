@@ -22,10 +22,12 @@ use super::workbuddy_auth::{
     self as auth, AuthError, CookieMetadata, FailedChecks, FailureAction, Renewal,
 };
 use super::workbuddy_cookie_vault as vault;
-use super::workbuddy_lifecycle::SCHEDULE_CHANGED;
+use super::workbuddy_lifecycle::{
+    IDLE_RELEASE, REBUILD_COOLDOWN, SCHEDULE_CHANGED, wait_for_rebuild,
+};
 use super::workbuddy_usage::{self, WorkbuddyUsage, SUMMARY_URL, USAGE_PAGE};
 
-const WINDOW_LABEL: &str = "workbuddy-sign-in";
+pub(super) const WINDOW_LABEL: &str = "workbuddy-sign-in";
 const USAGE_CHANGED: &str = "workbuddy-usage-changed";
 const REFRESH_INTERVAL: Duration = Duration::from_secs(300);
 const WORKBUDDY_HOST: &str = "www.workbuddy.cn";
@@ -83,6 +85,9 @@ pub(super) struct Connection {
     failures: FailedChecks,
     pub(super) retry_at: Option<Instant>,
     pub(super) renewal: Option<Renewal>,
+    /// When the hidden browser may be closed; the scheduler in `workbuddy_lifecycle` watches it.
+    pub(super) destroy_at: Option<Instant>,
+    destroyed_at: Option<Instant>,
     /// The cookie set last written to the Credential Manager, so an unchanged one is not rewritten.
     saved_fingerprint: Option<[u8; 32]>,
 }
@@ -90,6 +95,21 @@ pub(super) struct Connection {
 pub(super) fn connection() -> &'static Mutex<Connection> {
     static CONNECTION: OnceLock<Mutex<Connection>> = OnceLock::new();
     CONNECTION.get_or_init(|| Mutex::new(Connection::default()))
+}
+
+impl Connection {
+    /// How long the hidden browser has been gone; `None` while one is still open.
+    pub(super) fn released_ago(&self) -> Option<Duration> {
+        self.destroyed_at.map(|at| at.elapsed())
+    }
+
+    /// Records that the browser is gone. The next one starts empty, so it must restore the saved
+    /// cookies before reading usage again.
+    pub(super) fn window_released(&mut self, at: Instant) {
+        self.destroyed_at = Some(at);
+        self.destroy_at = None;
+        self.restored_startup = false;
+    }
 }
 
 fn profile_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -213,11 +233,33 @@ fn login_window(app: &AppHandle) -> Result<WebviewWindow, String> {
                     connection.signing_in = false;
                 }
                 let _ = window.hide();
+                // Signed in and hidden: the window is only needed again for the next background check.
+                connection.destroy_at = Some(Instant::now() + IDLE_RELEASE);
                 SCHEDULE_CHANGED.notify_one();
             });
         }
     });
     Ok(window)
+}
+
+/// Whether a released browser has had time to exit, so building a new one will not hit its profile.
+pub(super) fn rebuild_allowed(connection: &Connection) -> bool {
+    connection
+        .released_ago()
+        .is_none_or(|ago| ago >= REBUILD_COOLDOWN)
+}
+
+/// The saved reading, when it is recent enough to answer a poll without waking the hidden browser.
+///
+/// Closing the browser after every check only pays off if the thirty-second polls of a signed-in
+/// machine read this cache instead of rebuilding it. A failed or signed-out state has no usable
+/// cache, so those polls still go through the backoff above.
+fn cached_state(previous: Option<WorkbuddyState>, cached: Option<&CachedUsage>) -> Option<WorkbuddyState> {
+    let state @ WorkbuddyState::Connected { .. } = previous? else {
+        return None;
+    };
+    let cache = cached?;
+    (cache.checked.elapsed() < REFRESH_INTERVAL).then_some(state)
 }
 
 async fn browser_eval(window: &WebviewWindow, script: &str) -> Result<String, AuthError> {
@@ -559,6 +601,18 @@ pub(super) async fn refresh_and_publish(
     if !force && connection.retry_at.is_some_and(|at| at > Instant::now()) {
         return previous.unwrap_or(WorkbuddyState::Unavailable);
     }
+    // A poll on a signed-in machine must not wake the hidden browser: the saved usage answers for
+    // REFRESH_INTERVAL, and only an older reading (or a forced refresh) needs a real check.
+    if !force {
+        if let Some(state) = cached_state(previous, connection.cached.as_ref()) {
+            return state;
+        }
+    }
+    if !rebuild_allowed(connection) {
+        // The released browser is still exiting; ask again once its profile is free.
+        connection.retry_at = Some(Instant::now() + REBUILD_COOLDOWN);
+        return previous.unwrap_or(WorkbuddyState::Ready);
+    }
     let state = match login_window(app) {
         Ok(window) => match refresh(connection, &window, force).await {
             Ok(usage) => {
@@ -570,6 +624,8 @@ pub(super) async fn refresh_and_publish(
         Err(_) => record_failure(connection, None, AuthError::Webview),
     };
     connection.last_state = Some(state);
+    // The hidden browser has done its job; let the scheduler close it once it has been idle a while.
+    connection.destroy_at = Some(Instant::now() + IDLE_RELEASE);
     if force || previous != Some(state) {
         publish(app, state);
     }
@@ -613,6 +669,7 @@ async fn check_login(
             connection.signing_in = false;
             connection.finish_login = false;
             let _ = window.hide();
+            connection.destroy_at = Some(Instant::now() + IDLE_RELEASE);
             WorkbuddyState::Connected { usage }
         }
         Err(error) if error.server_rejected() || error == AuthError::NoCookies => {
@@ -671,6 +728,7 @@ pub async fn get_workbuddy_usage(
 #[tauri::command]
 pub async fn open_workbuddy_login(app: AppHandle) -> Result<(), String> {
     let mut connection = connection().lock().await;
+    wait_for_rebuild(&connection).await;
     let window = login_window(&app)?;
     if !connection.signing_in {
         connection.cached = None;
@@ -699,6 +757,7 @@ pub async fn disconnect_workbuddy(app: AppHandle) -> Result<(), String> {
     isolated_profile_path(&app)?;
     let marker = marker_path(&app)?;
     let window = if marker.is_file() || app.get_webview_window(WINDOW_LABEL).is_some() {
+        wait_for_rebuild(&connection).await;
         Some(login_window(&app)?)
     } else {
         None
@@ -760,5 +819,30 @@ mod tests {
         assert!(!login_navigation(
             &Url::parse("https://open.weixin.qq.com.evil.test/").unwrap()
         ));
+    }
+
+    /// The poll that arrives right after the browser was closed has to read the saved usage; if it
+    /// fell through, every signed-in machine would rebuild the hidden browser every thirty seconds.
+    #[test]
+    fn a_recent_reading_answers_the_next_poll_without_a_browser() {
+        let usage = super::super::workbuddy_usage::WorkbuddyUsage::for_test(120.0, 500.0, 1_700_000_000);
+        let connected = WorkbuddyState::Connected { usage };
+        let fresh = CachedUsage {
+            fingerprint: [0; 32],
+            checked: Instant::now(),
+        };
+        assert!(matches!(
+            cached_state(Some(connected), Some(&fresh)),
+            Some(WorkbuddyState::Connected { .. })
+        ));
+
+        let stale = CachedUsage {
+            fingerprint: [0; 32],
+            checked: Instant::now() - REFRESH_INTERVAL,
+        };
+        assert!(cached_state(Some(connected), Some(&stale)).is_none());
+        assert!(cached_state(Some(WorkbuddyState::Unavailable), Some(&fresh)).is_none());
+        assert!(cached_state(Some(connected), None).is_none());
+        assert!(cached_state(None, Some(&fresh)).is_none());
     }
 }

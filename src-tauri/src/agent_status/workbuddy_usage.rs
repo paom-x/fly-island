@@ -20,6 +20,18 @@ pub(crate) struct WorkbuddyUsage {
     updated_at: i64,
 }
 
+#[cfg(test)]
+impl WorkbuddyUsage {
+    /// A reading with the given numbers, for tests that exercise caching rather than billing.
+    pub(super) fn for_test(remaining: f64, total: f64, updated_at: i64) -> Self {
+        Self {
+            remaining,
+            total,
+            updated_at,
+        }
+    }
+}
+
 #[derive(Deserialize)]
 struct Summary {
     code: Option<i64>,
