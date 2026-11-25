@@ -9,7 +9,7 @@ use std::{
 use serde_json::{json, Value};
 
 use super::config::{is_valid_token, load_config};
-use super::decision::{hook_response, question_response, route, Activity, Agent, Answers, Decision, HookInput, Kind, Settled};
+use super::decision::{hook_response, question_response, route, zcode_response, Activity, Agent, Answers, Decision, HookInput, Kind, Settled};
 use super::http::{check_access, read_request, HttpRequest};
 use super::queue::{CloseReason, Outcome, Queue};
 use super::server::{listen, ApprovalEvent, Shared};
@@ -159,6 +159,45 @@ fn only_local_agents_with_the_token_get_in() {
     assert_eq!(check_access(&remote, TOKEN, 47830).unwrap_err().status, 401);
     let from_page = request(&[("host", "127.0.0.1:47830"), ("authorization", &bearer), ("origin", "https://evil.example")]);
     assert_eq!(check_access(&from_page, TOKEN, 47830).unwrap_err().status, 403);
+}
+
+#[test]
+fn zcode_answers_a_tool_call_in_its_pre_tool_use_format() {
+    assert_eq!(route("/zcode/pre-tool-use"), Some((Agent::Zcode, Kind::Permission)));
+    assert_eq!(Agent::Zcode.path(), "/zcode/pre-tool-use");
+    // Handed back, waiting too long, and never answered all leave the decision to Z Code.
+    assert_eq!(zcode_response(None, None), "{}");
+    assert_eq!(zcode_response(Some(Decision::Terminal), None), "{}");
+    let allow: Value = serde_json::from_str(&zcode_response(Some(Decision::Allow), None)).unwrap();
+    assert_eq!(allow, json!({ "hookSpecificOutput": { "hookEventName": "PreToolUse", "permissionDecision": "allow" } }));
+    // Z Code keeps no "always allow" rules of Claude Code's shape, so both allow this call.
+    assert_eq!(zcode_response(Some(Decision::AllowAlways), None), zcode_response(Some(Decision::Allow), None));
+    let deny: Value = serde_json::from_str(&zcode_response(Some(Decision::Deny), None)).unwrap();
+    assert_eq!(deny["hookSpecificOutput"]["permissionDecision"], "deny");
+    assert_eq!(deny["hookSpecificOutput"]["permissionDecisionReason"], "Denied in Fly Island");
+    let explained: Value = serde_json::from_str(&zcode_response(Some(Decision::Deny), Some("not that file"))).unwrap();
+    assert_eq!(explained["hookSpecificOutput"]["permissionDecisionReason"], "not that file");
+}
+
+#[test]
+fn a_zcode_tool_call_waits_for_the_island_and_is_refused() {
+    let server = TestServer::start(Duration::from_secs(30));
+    let body = json!({
+        "session_id": "z1", "cwd": "E:\\p", "hook_event_name": "PreToolUse", "permission_mode": "build",
+        "tool_name": "Write", "tool_input": { "file_path": "E:\\p\\notes.txt", "content": "hi" },
+    })
+    .to_string();
+    let request = raw_request(server.port, "/zcode/pre-tool-use", TOKEN, "", &body);
+    let port = server.port;
+    let waiting = thread::spawn(move || send(port, &request));
+    server.wait_for(|server| server.requested().len() == 1);
+    let id = server.requested()[0].0;
+    server.shared.decide(id, out(Decision::Deny, None)).unwrap();
+    let (status, answer) = waiting.join().unwrap();
+    assert_eq!(status, 200);
+    let answer: Value = serde_json::from_str(&answer).unwrap();
+    assert_eq!(answer["hookSpecificOutput"]["hookEventName"], "PreToolUse");
+    assert_eq!(answer["hookSpecificOutput"]["permissionDecision"], "deny");
 }
 
 #[test]

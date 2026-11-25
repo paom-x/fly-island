@@ -15,7 +15,7 @@ use std::{
 };
 
 use super::{
-    decision::{hook_response, question_response, route, Activity, Agent, Decision, HookInput, Kind, ACTIVITY_PATH},
+    decision::{route, Activity, Agent, Decision, HookInput, Kind, Reply, ACTIVITY_PATH},
     http::{check_access, read_request, write_response, HttpError},
     queue::{ApprovalRequest, CloseReason, Outcome, Queue},
 };
@@ -54,6 +54,11 @@ impl Shared {
 
     pub fn set_enabled(&self, enabled: bool) {
         self.enabled.store(enabled, Ordering::Relaxed);
+    }
+
+    /// Whether the island answers requests at all; off, every one goes straight back.
+    pub fn is_enabled(&self) -> bool {
+        self.enabled.load(Ordering::Relaxed)
     }
 
     pub fn decide(&self, id: u64, outcome: Outcome) -> Result<(), String> {
@@ -186,16 +191,22 @@ fn answer(shared: &Shared, stream: &TcpStream, port: u16) -> Result<Option<Strin
         return Ok(None);
     }
     let decision = outcome.as_ref().map(|outcome| outcome.decision);
-    Ok(Some(match kind {
-        Kind::Permission => {
-            let message = outcome.as_ref().and_then(|outcome| outcome.message.as_deref());
-            hook_response(decision, message, suggestions.as_ref())
+    let answers = outcome
+        .as_ref()
+        .filter(|_| decision == Some(Decision::Answer))
+        .and_then(|outcome| outcome.answers.as_ref());
+    Ok(Some(
+        Reply {
+            agent,
+            kind,
+            decision,
+            message: outcome.as_ref().and_then(|outcome| outcome.message.as_deref()),
+            suggestions: suggestions.as_ref(),
+            answers,
+            tool_input: &tool_input,
         }
-        Kind::Question => {
-            let answers = outcome.as_ref().filter(|_| decision == Some(Decision::Answer)).and_then(|outcome| outcome.answers.as_ref());
-            question_response(answers, &tool_input)
-        }
-    }))
+        .body(),
+    ))
 }
 
 /// Waits for the user's choice, the deadline, a hang-up or the island quitting.

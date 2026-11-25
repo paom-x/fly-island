@@ -284,6 +284,19 @@ fn install_agent_status_hooks_now(app: &AppHandle) -> Result<AgentHooksInstallRe
     })
 }
 
+/// Rewrites Z Code's config so its approval hook matches the island's switch, and makes sure the
+/// script it names is on disk. Z Code asks that hook on every tool call, so it is only worth
+/// installing while approvals are on.
+pub(crate) fn sync_zcode_approval_hook(app: &AppHandle) -> Result<(), String> {
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| format!("Failed to resolve app data directory: {error}"))?;
+    install_agent_hook_scripts(&app_dir)?;
+    let config_path = windows_home_dir()?.join(".zcode").join("cli").join("config.json");
+    install_zcode_status_hooks(&config_path, &app_dir)
+}
+
 /// Claude Code, Codex, DSH and WorkBuddy sessions active in the last two hours, running and waiting ones first.
 #[tauri::command]
 /// `window_hours` (1-24, default 2): how long ago a listed session may have last changed.

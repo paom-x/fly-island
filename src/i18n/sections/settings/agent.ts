@@ -139,7 +139,7 @@ export const zhCN: SettingsAgentText = {
   approval: {
     title: "在岛上审批",
     onIsland: "在岛上允许或拒绝 Agent 的操作",
-    hint: "Claude Code 或 Codex 要运行命令、改文件时，岛上弹出卡片，可以允许、拒绝或交回终端（快捷键 Ctrl+Alt+Y / N / T）。卡片显示期间终端里不出审批框；2 分钟没处理、游戏模式勿扰时自动交回终端。需要先点下方的“安装/修复”。Codex 还要在它的 /hooks 里信任新钩子。auto 模式自己批准的操作不会弹出。",
+    hint: "Claude Code、Codex 或 Z Code 要运行命令、改文件时，岛上弹出卡片，可以允许、拒绝或交回终端（快捷键 Ctrl+Alt+Y / N / T）。卡片显示期间终端里不出审批框；2 分钟没处理、游戏模式勿扰时自动交回终端。需要先点下方的“安装/修复”。Codex 还要在它的 /hooks 里信任新钩子；Z Code 只在“变更前确认”模式下询问，其他模式自己执行、不会弹卡。auto 模式自己批准的操作不会弹出。",
   },
   replyMarker: {
     title: "回复状态标记",
@@ -233,7 +233,7 @@ export const en: SettingsAgentText = {
   approval: {
     title: "Approve on the island",
     onIsland: "Allow or deny agent actions on the island",
-    hint: "When Claude Code or Codex wants to run a command or change a file, a card on the island lets you allow, deny or hand it back to the terminal (Ctrl+Alt+Y / N / T). The terminal shows no prompt while the card is up; after 2 minutes, or while game mode keeps the island quiet, it goes back to the terminal. Click Install/repair below first, and trust the new hook in Codex's /hooks. Actions auto mode approves by itself don't show up.",
+    hint: "When Claude Code, Codex or Z Code wants to run a command or change a file, a card on the island lets you allow, deny or hand it back to the terminal (Ctrl+Alt+Y / N / T). The terminal shows no prompt while the card is up; after 2 minutes, or while game mode keeps the island quiet, it goes back to the terminal. Click Install/repair below first, and trust the new hook in Codex's /hooks; Z Code only asks in its confirm-before-changes mode, and runs on its own in the other modes. Actions auto mode approves by itself don't show up.",
   },
   replyMarker: {
     title: "Reply status marker",

@@ -68,3 +68,13 @@
 - 钩子超时后 ZCode 的确切行为（是否等同空输出、是否标记失败并继续）。改用脚本自超时后这一项不影响实现。
 - 「总是允许本项目」这类规则能否通过钩子表达。目前按「不支持」处理，岛上只做单次允许/拒绝/交回终端。
 - 桌面端与 CLI 是否共用同一份 `~/.zcode/cli/config.json`：桌面端目录 `%APPDATA%\ZCode` 下没有 `config.json`，用户级配置只有 CLI 这一份，但未逐项验证桌面端会话确实读它。
+
+## 8. 落地实现与实机验收（2026-11-25）
+
+- 钩子条目：`zcode_hooks.rs` 的 `ZCODE_HOOKS` 现有四条，`PreToolUse` 一条带 `matcher = "^(Bash|Write|Edit|MultiEdit|ApplyPatch)$"`，脚本为编入二进制的 `fly-island-agent-approval.ps1`，参数 `zcode pre-tool-use`，`timeoutMs = 150000`（端点自己 120 秒交回、脚本等 140 秒，ZCode 必须给得更长）。
+- 端点：`agent_approval/decision.rs` 的 `Agent::Zcode` 路由 `/zcode/pre-tool-use`，答复按 `PreToolUse` 的形状编码——允许输出 `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}`，拒绝再带 `permissionDecisionReason`，没有决定时输出 `{}` 让 ZCode 走自己的弹框。
+- 脚本按 `/<provider>/<mode>` 拼路径，`codex` 侧对应路径因此改为 `/codex/permission-request`；Z Code 只在 `permission_mode == 'build'`（变更前确认）时转发，其余模式直接退出，避免岛拦截 ZCode 本不会问的操作。
+- **这条钩子只在开启岛上审批时装**：Z Code 没有「只在征求意见时触发」的事件，`PreToolUse` 对每个匹配的工具调用都会跑一次，而这台机器上 PowerShell 启动本身就要约 1.1 秒（脚本再加上约 0.9 秒，实测关掉审批时一次调用 2.01 秒）。所以 `set_agent_approval_enabled` 会立刻重写 Z Code 的配置：打开时写入这条条目，关闭时连同条目一起撤掉，状态钩子照旧保留；切换实测两次配置都按预期增删，未开启时文件里没有 `PreToolUse`。
+- 实机验收（本机，岛屿展开态）：向端点挂一个 `Write` 请求后岛上出现卡片 `probe · 请求使用 Write`（按钮「拒绝」「允许」「到终端」），点「允许」后钩子脚本打印上述 allow JSON、退出码 0；`agent_approval` 单测覆盖 allow / deny / 无决定三种编码。
+- **踩坑**：脚本原先用 `$input = $body | ConvertFrom-Json` 解析 stdin，而 `$input` 是 PowerShell 的自动变量（管道输入枚举器），在 `-File` 脚本里赋值既不报错也不生效，导致 `permission_mode` 恒为空、判断恒真、每次都在入口 `exit 0`（表现为「脚本空输出、岛上无卡片」）。变量改名为 `$payload` 后立刻正常。用 `-Command` 或改名的临时脚本测试都不会暴露这一点。
+- 未做：把「始终允许本项目」映射成 ZCode 的规则（结论同第 7 节，岛上只做单次允许/拒绝/交回终端）。

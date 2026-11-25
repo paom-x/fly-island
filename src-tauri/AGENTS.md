@@ -10,14 +10,14 @@ src-tauri/src/
 ├── lib.rs                   # 只有 mod 声明和 run()：插件、setup、托盘、collect_commands!（汇总各模块的 tauri_commands!）
 ├── tray.rs                  # 托盘菜单与事件：文字跟随岛屿语言（命令 set_tray_language），显示 / 隐藏合成一项，按岛屿当前是否可见显示
 ├── island/                  # 主窗口：命令、窗口状态、几何计算、毛玻璃、鼠标穿透、贴边动画
-├── agent_approval/          # 在岛上审批（B6 第 2 期）：127.0.0.1 上的审批端点（标准库 TcpListener，挂起时能发现 Agent 断开）、按会话排队、等待上限、agent-approval.json
+├── agent_approval/          # 在岛上审批（B6 第 2 期）：127.0.0.1 上的审批端点（标准库 TcpListener，挂起时能发现 Agent 断开）、按会话排队、等待上限、agent-approval.json；Claude Code / Codex 走 PermissionRequest，Z Code 走 PreToolUse
 ├── agent_status/            # AI 代理状态：快照、运行标记、Codex / Claude Code hook 安装；hooks/ 为编入二进制的 hook 脚本；sound_packs.rs 为导入的音效包（应用数据目录的 sound-packs/）
 │                            #   codex_activity.rs：增量保存 rollout 的 turn 边界，fixtures/ 为脱敏的真实记录
 │                            #   hook_migration.rs：启动时把改名前写入 Codex / Claude Code 配置的 Hook 重写到新脚本
 │                            #   reply_marker.rs：可选的回复状态标记（B9），增删 CLAUDE.md 里岛屿自己的那段说明、识别回复末行的标记
 │                            #   dsh_desktop.rs / dsh_sessions.rs / dsh_credentials.rs / dsh_usage.rs：DSH 桌面端本地会话检查点、只读凭据与官方余额查询
 │                            #   workbuddy_sessions.rs：WorkBuddy 桌面端本地会话记录；workbuddy_connection.rs / workbuddy_auth.rs / workbuddy_cookie_vault.rs / workbuddy_usage.rs：WorkBuddy 官网独立登录窗口、续期策略、凭据副本与积分缓存；workbuddy_lifecycle.rs：隐藏浏览器建窗与闲置释放的后台调度
-│                            #   zcode_hooks.rs：Z Code 状态钩子（写进 ~/.zcode/cli/config.json）；zcode_sessions.rs：Z Code 本地会话记录（~/.zcode/cli/db/db.sqlite）；zcode_credentials.rs / zcode_api_key.rs / zcode_usage.rs：Z Code 桌面凭据、Credential Manager 中的 Coding Plan API Key 与额度查询
+│                            #   zcode_hooks.rs：Z Code 状态钩子（写进 ~/.zcode/cli/config.json），含一条转发到岛上审批的 PreToolUse 条目（仅在开启岛上审批时安装）；zcode_sessions.rs：Z Code 本地会话记录（~/.zcode/cli/db/db.sqlite）；zcode_credentials.rs / zcode_api_key.rs / zcode_usage.rs：Z Code 桌面凭据、Credential Manager 中的 Coding Plan API Key 与额度查询
 ├── app_log/                 # 问题排查日志（默认关闭）：开启后把标准错误接到管道写入 logs/，前端的报错经 append_app_log 写入；file.rs 负责一份备份的轮转
 ├── system/                  # 开机自启（注册表）、更新代理与配置、待办 Markdown 导出与受限同步读写（todo_sync）、已安装字体（fonts）、不合成 Alt 键地聚焦自己的窗口（window_focus）
 ├── clipboard_history/

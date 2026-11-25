@@ -49,7 +49,7 @@ pub(super) fn build_codex_hook_block(
     // script forwards it. It reads the endpoint's address itself and answers nothing (back to the
     // terminal prompt) while the island is closed or approving there is off.
     let approval_script_path = status_script_path.with_file_name(AGENT_APPROVAL_SCRIPT_FILE_NAME);
-    let approval_command = agent_status_command(&approval_script_path, "codex", "permission");
+    let approval_command = agent_status_command(&approval_script_path, "codex", "permission-request");
 
     format!(
         r#"{begin}

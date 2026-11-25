@@ -97,6 +97,13 @@ pub(crate) fn endpoint() -> Option<ApprovalEndpoint> {
     SERVICE.get().map(|service| ApprovalEndpoint { port: service.port, token: service.token.clone() })
 }
 
+/// Whether the island answers approvals at all. Off, every request goes straight back to the
+/// terminal, and the Z Code hook that would ask is not installed (Z Code runs it on every tool
+/// call, so an unused one would cost a process start per call).
+pub(crate) fn enabled() -> bool {
+    SERVICE.get().is_some_and(|service| service.shared.is_enabled())
+}
+
 /// The URL `agent`'s approval hook (`PermissionRequest`) posts to.
 pub(crate) fn hook_url(agent: Agent) -> Option<String> {
     endpoint().map(|endpoint| format!("http://127.0.0.1:{}{}", endpoint.port, agent.path()))
@@ -119,9 +126,11 @@ fn service() -> Result<&'static Service, String> {
 
 /// Turns approving on the island on or off. Off, requests go straight back to the terminal.
 #[tauri::command]
-pub fn set_agent_approval_enabled(enabled: bool) -> Result<(), String> {
+pub fn set_agent_approval_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
     service()?.shared.set_enabled(enabled);
-    Ok(())
+    // Z Code's approval hook exists only while approvals are on, so flipping the switch has to
+    // rewrite its config rather than wait for the next Install/Repair.
+    crate::agent_status::sync_zcode_approval_hook(&app)
 }
 
 /// Answers a shown request. Approvals: `allow`, `deny` (with an optional `message` for the

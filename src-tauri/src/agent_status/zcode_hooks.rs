@@ -14,8 +14,8 @@ use serde_json::{Map, Value};
 
 use super::hooks_state::HookInstallState;
 use super::{
-    write_text_file, AGENT_SESSION_SCRIPT_FILE_NAME, AGENT_STATUS_SCRIPT_FILE_NAME,
-    FLY_ISLAND_AGENT_HOOK_SIGNATURE,
+    write_text_file, AGENT_APPROVAL_SCRIPT_FILE_NAME, AGENT_SESSION_SCRIPT_FILE_NAME,
+    AGENT_STATUS_SCRIPT_FILE_NAME, FLY_ISLAND_AGENT_HOOK_SIGNATURE,
 };
 
 /// ZCode's own hook chain is bounded by this too: the island's `SessionStart` walks the process
@@ -23,44 +23,77 @@ use super::{
 const SESSION_START_TIMEOUT_MS: i64 = 15_000;
 /// The status hooks only rewrite one small JSON file.
 const STATUS_TIMEOUT_MS: i64 = 5_000;
-/// ZCode drops a hook's output that is larger than this; the island's hooks print nothing.
+/// ZCode drops a hook's output that is larger than this; only the approval hook prints anything.
 const MAX_OUTPUT_BYTES: i64 = 65_536;
+/// The approval endpoint hands a request back after 120 s (`agent_approval::WAIT_LIMIT`) and the
+/// script waits 140 s for it, so ZCode must allow the hook longer than either.
+const APPROVAL_TIMEOUT_MS: i64 = 150_000;
 
 /// One hook the island runs, as ZCode's `type: "process"` entry takes it.
 struct ZcodeHook {
     event: &'static str,
+    /// A regular expression over tool names; the three non-tool events carry none.
+    matcher: Option<&'static str>,
     script: &'static str,
     provider_args: [&'static str; 2],
     timeout_ms: i64,
     status_message: &'static str,
+    /// Installed only while the island answers approvals: see `active_hooks`.
+    approval_only: bool,
 }
 
+/// The tools the island approves: the ones ZCode stops for when it asks before changes. Its alias
+/// forms are matched too, so a `Write` and the `ApplyPatch` that stands for it both arrive.
+const APPROVAL_MATCHER: &str = "^(Bash|Write|Edit|MultiEdit|ApplyPatch)$";
+
 /// The events the island listens to. `PermissionRequest` is deliberately absent: ZCode ignores a
-/// hook's answer there and the island only needs the status of the turn (documented in the
-/// investigation above), so adding it would buy nothing but a second copy of the same request.
-const ZCODE_HOOKS: [ZcodeHook; 3] = [
+/// hook's answer there, so the island decides on `PreToolUse` instead (the investigation above
+/// records the measurement).
+const ZCODE_HOOKS: [ZcodeHook; 4] = [
     ZcodeHook {
         event: "SessionStart",
+        matcher: None,
         script: AGENT_SESSION_SCRIPT_FILE_NAME,
         provider_args: ["zcode", "start"],
         timeout_ms: SESSION_START_TIMEOUT_MS,
         status_message: "正在记录 Fly Island 会话",
+        approval_only: false,
     },
     ZcodeHook {
         event: "UserPromptSubmit",
+        matcher: None,
         script: AGENT_STATUS_SCRIPT_FILE_NAME,
         provider_args: ["zcode", "running"],
         timeout_ms: STATUS_TIMEOUT_MS,
         status_message: "正在更新 Fly Island 状态",
+        approval_only: false,
     },
     ZcodeHook {
         event: "Stop",
+        matcher: None,
         script: AGENT_STATUS_SCRIPT_FILE_NAME,
         provider_args: ["zcode", "completed"],
         timeout_ms: STATUS_TIMEOUT_MS,
         status_message: "正在更新 Fly Island 状态",
+        approval_only: false,
+    },
+    ZcodeHook {
+        event: "PreToolUse",
+        matcher: Some(APPROVAL_MATCHER),
+        script: AGENT_APPROVAL_SCRIPT_FILE_NAME,
+        provider_args: ["zcode", "pre-tool-use"],
+        timeout_ms: APPROVAL_TIMEOUT_MS,
+        status_message: "正在等待 Fly Island 审批",
+        approval_only: true,
     },
 ];
+
+/// The entries to write right now. Approvals are opt-in and off by default, and Z Code asks its
+/// `PreToolUse` hook on every tool call, so keeping that entry installed would spend a process
+/// start per call on users who never approve on the island.
+fn active_hooks(approval: bool) -> impl Iterator<Item = &'static ZcodeHook> {
+    ZCODE_HOOKS.iter().filter(move |hook| !hook.approval_only || approval)
+}
 
 pub(super) fn install_zcode_status_hooks(config_path: &Path, app_dir: &Path) -> Result<(), String> {
     // `~/.zcode/cli` appears the first time ZCode's CLI side runs. Without it ZCode is not
@@ -125,6 +158,15 @@ pub(super) fn remove_managed_zcode_hooks(config: &mut Value) {
 /// Adds the island's entries and switches the file's hooks on. `enabled` is the one setting the
 /// island has to change: ZCode runs no configured hook while it is false (the default).
 fn merge_managed_zcode_hooks(config: &mut Value, app_dir: &Path) -> Result<(), String> {
+    merge_managed_zcode_hooks_when(config, app_dir, crate::agent_approval::enabled())
+}
+
+/// The same, with the approval switch passed in so tests can exercise both sides of it.
+fn merge_managed_zcode_hooks_when(
+    config: &mut Value,
+    app_dir: &Path,
+    approval: bool,
+) -> Result<(), String> {
     let root = config
         .as_object_mut()
         .ok_or_else(|| "ZCode's config.json is not a JSON object".to_string())?;
@@ -145,7 +187,7 @@ fn merge_managed_zcode_hooks(config: &mut Value, app_dir: &Path) -> Result<(), S
         .as_object_mut()
         .ok_or_else(|| "ZCode's config.json has a hooks.events value that is not an object".to_string())?;
 
-    for hook in &ZCODE_HOOKS {
+    for hook in active_hooks(approval) {
         let entries = events
             .entry(hook.event.to_string())
             .or_insert_with(|| Value::Array(Vec::new()));
@@ -172,9 +214,12 @@ fn build_hook_entry(hook: &ZcodeHook, app_dir: &Path) -> Value {
         "timeoutMs": hook.timeout_ms,
         "statusMessage": hook.status_message,
     });
-    // ZCode's matcher is a regular expression over the tool name; these three events are not tool
-    // events, so the entry carries no matcher at all and matches every occurrence.
-    serde_json::json!({ "hooks": [process] })
+    // ZCode's matcher is a regular expression over the tool name, so only the tool events carry
+    // one; without it an entry matches every tool.
+    match hook.matcher {
+        Some(matcher) => serde_json::json!({ "matcher": matcher, "hooks": [process] }),
+        None => serde_json::json!({ "hooks": [process] }),
+    }
 }
 
 /// Current when every hook Install/Repair writes is already there. A file with none of them is
@@ -193,7 +238,7 @@ pub(super) fn zcode_hooks_state(config_json: Option<&str>, app_dir: &Path) -> Ho
     }
 
     let events = &hooks["events"];
-    let all_current = ZCODE_HOOKS.iter().all(|hook| {
+    let all_current = active_hooks(crate::agent_approval::enabled()).all(|hook| {
         events[hook.event]
             .as_array()
             .is_some_and(|entries| entries.iter().any(|entry| *entry == build_hook_entry(hook, app_dir)))
@@ -219,7 +264,8 @@ mod tests {
             "plugins": { "enabledPlugins": { "github": true } },
         });
         remove_managed_zcode_hooks(&mut config);
-        merge_managed_zcode_hooks(&mut config, app_dir()).expect("merge");
+        // Approved on the island, so the tool entry is part of what gets written.
+        merge_managed_zcode_hooks_when(&mut config, app_dir(), true).expect("merge");
         config
     }
 
@@ -245,6 +291,14 @@ mod tests {
         assert!(start["args"][4].as_str().unwrap().ends_with(AGENT_SESSION_SCRIPT_FILE_NAME));
         let stop = &config["hooks"]["events"]["Stop"][0]["hooks"][0];
         assert!(stop["args"][4].as_str().unwrap().ends_with(AGENT_STATUS_SCRIPT_FILE_NAME));
+        // The tool entry waits on the island's approval and only covers the tools it decides.
+        let approve = &config["hooks"]["events"]["PreToolUse"][0];
+        assert_eq!(approve["matcher"], APPROVAL_MATCHER);
+        let approve = &approve["hooks"][0];
+        assert!(approve["args"][4].as_str().unwrap().ends_with(AGENT_APPROVAL_SCRIPT_FILE_NAME));
+        assert_eq!(approve["args"][5], "zcode");
+        assert_eq!(approve["args"][6], "pre-tool-use");
+        assert_eq!(approve["timeoutMs"], APPROVAL_TIMEOUT_MS);
     }
 
     #[test]
@@ -255,12 +309,32 @@ mod tests {
                 "events": { "PreToolUse": [{ "matcher": "Edit", "hooks": [{ "type": "process", "command": "node", "args": ["a"] }] }] },
             },
         });
-        merge_managed_zcode_hooks(&mut config, app_dir()).expect("first");
+        merge_managed_zcode_hooks_when(&mut config, app_dir(), true).expect("first");
         remove_managed_zcode_hooks(&mut config);
-        merge_managed_zcode_hooks(&mut config, app_dir()).expect("second");
+        merge_managed_zcode_hooks_when(&mut config, app_dir(), true).expect("second");
         assert_eq!(config["hooks"]["events"]["UserPromptSubmit"].as_array().unwrap().len(), 1);
-        assert_eq!(config["hooks"]["events"]["PreToolUse"].as_array().unwrap().len(), 1);
+        // The foreign Edit entry stays and the island's own tool entry is added next to it.
+        assert_eq!(config["hooks"]["events"]["PreToolUse"].as_array().unwrap().len(), 2);
         assert_eq!(config["hooks"]["events"]["PreToolUse"][0]["matcher"], "Edit");
+        assert_eq!(config["hooks"]["events"]["PreToolUse"][1]["matcher"], APPROVAL_MATCHER);
+    }
+
+    #[test]
+    fn the_approval_hook_is_left_out_while_approvals_are_off() {
+        // Z Code asks this hook on every tool call, so an unused one would cost a process start per
+        // call: it is written only while the island answers.
+        let mut config = serde_json::json!({
+            "hooks": {
+                "enabled": true,
+                "events": { "PreToolUse": [{ "matcher": "Edit", "hooks": [{ "type": "process", "command": "node", "args": ["a"] }] }] },
+            },
+        });
+        merge_managed_zcode_hooks_when(&mut config, app_dir(), false).expect("merge");
+        let tool_entries = config["hooks"]["events"]["PreToolUse"].as_array().expect("foreign entry kept");
+        assert_eq!(tool_entries.len(), 1);
+        assert_eq!(tool_entries[0]["matcher"], "Edit");
+        // The status events are still written.
+        assert_eq!(config["hooks"]["events"]["UserPromptSubmit"].as_array().unwrap().len(), 1);
     }
 
     #[test]

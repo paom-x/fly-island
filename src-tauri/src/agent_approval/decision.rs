@@ -12,6 +12,7 @@ use serde_json::{json, Map, Value};
 pub enum Agent {
     ClaudeCode,
     Codex,
+    Zcode,
 }
 
 /// What the island is asked for: an approval, or answers to a question.
@@ -33,6 +34,9 @@ pub(super) fn route(path: &str) -> Option<(Agent, Kind)> {
     match path {
         "/claude/permission-request" => Some((Agent::ClaudeCode, Kind::Permission)),
         "/codex/permission-request" => Some((Agent::Codex, Kind::Permission)),
+        // Z Code ignores a decision made on its `PermissionRequest`, so its requests come through
+        // `PreToolUse` instead: there the hook's answer decides whether the tool runs.
+        "/zcode/pre-tool-use" => Some((Agent::Zcode, Kind::Permission)),
         QUESTION_PATH => Some((Agent::ClaudeCode, Kind::Question)),
         _ => None,
     }
@@ -44,6 +48,7 @@ impl Agent {
         match self {
             Self::ClaudeCode => "/claude/permission-request",
             Self::Codex => "/codex/permission-request",
+            Self::Zcode => "/zcode/pre-tool-use",
         }
     }
 }
@@ -174,6 +179,46 @@ pub(super) fn hook_response(decision: Option<Decision>, message: Option<&str>, s
         }),
     };
     json!({ "hookSpecificOutput": { "hookEventName": "PermissionRequest", "decision": decision } }).to_string()
+}
+
+/// The `PreToolUse` hook's answer for Z Code: it reads `permissionDecision` and, for a refusal,
+/// `permissionDecisionReason`. `{}` prints nothing there, and Z Code asks in its own window, which
+/// is also what a hook that gives up does.
+pub(super) fn zcode_response(decision: Option<Decision>, message: Option<&str>) -> String {
+    let permission = match decision {
+        None | Some(Decision::Terminal | Decision::Answer) => return "{}".to_string(),
+        // Z Code keeps no "always allow" rules of Claude Code's shape, so that choice allows this call.
+        Some(Decision::Allow | Decision::AllowAlways) => "allow",
+        Some(Decision::Deny) => "deny",
+    };
+    let mut output = json!({ "hookEventName": "PreToolUse", "permissionDecision": permission });
+    if permission == "deny" {
+        let reason = message.map(str::trim).filter(|text| !text.is_empty()).unwrap_or(DEFAULT_DENY_MESSAGE);
+        output["permissionDecisionReason"] = Value::from(reason);
+    }
+    json!({ "hookSpecificOutput": output }).to_string()
+}
+
+/// Everything an answer needs, gathered while the request is still in hand: the same decision, in
+/// each agent's own format.
+pub(super) struct Reply<'a> {
+    pub agent: Agent,
+    pub kind: Kind,
+    pub decision: Option<Decision>,
+    pub message: Option<&'a str>,
+    pub suggestions: Option<&'a Value>,
+    pub answers: Option<&'a Answers>,
+    pub tool_input: &'a Value,
+}
+
+impl Reply<'_> {
+    pub(super) fn body(&self) -> String {
+        match (self.agent, self.kind) {
+            (Agent::Zcode, _) => zcode_response(self.decision, self.message),
+            (_, Kind::Permission) => hook_response(self.decision, self.message, self.suggestions),
+            (_, Kind::Question) => question_response(self.answers, self.tool_input),
+        }
+    }
 }
 
 /// The `PreToolUse` hook's answer to a question: the tool runs with `answers` added to its input,
