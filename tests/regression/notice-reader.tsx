@@ -46,7 +46,7 @@ mockIPC((command, payload) => {
     case "get_media_state": return DEFAULT_MEDIA_STATE;
     case "get_clipboard_history": return { settings: { enabled: false, captureImages: true, maxItems: 30, shortcut: "Ctrl+Shift+V", shortcutEnabled: false }, items: [] };
     case "get_file_shelf": return { items: [] };
-    case "get_agent_status": return { codex: { phase: "idle", updatedAt: 0 }, claudeCode: { phase: "idle", updatedAt: 0 }, updatedAt: 0, statusPath: "" };
+    case "get_agent_status": return { codex: { phase: "idle", updatedAt: 0 }, zcode: { phase: "idle", updatedAt: 0 }, claudeCode: { phase: "idle", updatedAt: 0 }, updatedAt: 0, statusPath: "" };
     case "list_agent_sessions": case "agent_sessions_in_front": case "agent_approval_pending": return [];
     case "set_qq_notifications_enabled": case "get_qq_notification_state": return { revision: ++revision, enabled: true, status: "listening", items: [], error: null };
     case "set_wechat_reminders_enabled": return { revision: ++revision, enabled: false, status: "disabled", pending: false, lastAttentionAt: null, error: null, previewEnabled: false, previewStatus: "off", messages: [] };

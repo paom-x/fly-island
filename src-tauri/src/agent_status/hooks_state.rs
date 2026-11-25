@@ -27,6 +27,8 @@ pub(super) enum HookInstallState {
 pub struct AgentHooksState {
     pub(super) codex: HookInstallState,
     pub(super) claude_code: HookInstallState,
+    /// ZCode keeps its hooks in JSON (zcode_hooks.rs), not in a managed block.
+    pub(super) zcode: HookInstallState,
     /// The hook scripts in the app data folder differ from the ones in this build.
     pub(super) scripts_outdated: bool,
 }

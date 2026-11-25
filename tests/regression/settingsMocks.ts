@@ -73,7 +73,7 @@ mockIPC((command, payload) => {
     case "set_clipboard_history_settings":
       clipboardSettings = { ...clipboardSettings, ...(args.settings as object | undefined) };
       return { settings: clipboardSettings, items: [] };
-    case "get_agent_status": return { codex: { phase: "idle", updatedAt: 0 }, claudeCode: { phase: "idle", updatedAt: 0 }, updatedAt: 0, statusPath: "C:\\Users\\demo\\AppData\\Roaming\\com.flyisland.app\\agent-status.json" };
+    case "get_agent_status": return { codex: { phase: "idle", updatedAt: 0 }, zcode: { phase: "idle", updatedAt: 0 }, claudeCode: { phase: "idle", updatedAt: 0 }, updatedAt: 0, statusPath: "C:\\Users\\demo\\AppData\\Roaming\\com.flyisland.app\\agent-status.json" };
     case "get_zcode_api_key_settings": return zcodeApiKeySettings;
     case "save_zcode_api_key_settings":
       zcodeApiKeySettings = {
@@ -111,7 +111,7 @@ mockIPC((command, payload) => {
     case "updater_configured": return true;
     case "get_updater_proxy": return null;
     case "plugin:app|version": return "0.0.0-test";
-    case "get_agent_hooks_state": return { codex: "notInstalled", claudeCode: "notInstalled", scriptsOutdated: false };
+    case "get_agent_hooks_state": return { codex: "notInstalled", claudeCode: "notInstalled", zcode: "notInstalled", scriptsOutdated: false };
     case "list_sound_packs": return [{ id: "chimes-1", name: "Chimes", author: "Ann", license: "CC0-1.0", sounds: { complete: "complete.wav", error: "error.wav" } }];
     case "get_plugins": return { registry: { installed: {}, developerMode: false, indexUrl: "" }, live: {} };
     case "get_plugins_index": return [];

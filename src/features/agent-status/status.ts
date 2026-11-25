@@ -12,11 +12,19 @@ export const DEFAULT_AGENT_TASK_STATUS: AgentTaskStatus = {
 export const DEFAULT_AGENT_STATUS: AgentStatusSnapshot = {
   codex: DEFAULT_AGENT_TASK_STATUS,
   claudeCode: DEFAULT_AGENT_TASK_STATUS,
+  zcode: DEFAULT_AGENT_TASK_STATUS,
   updatedAt: 0,
   statusPath: "",
   others: [],
 };
-export const AGENT_PROVIDERS: HookAgentProvider[] = ["codex", "claudeCode"];
+export const AGENT_PROVIDERS: HookAgentProvider[] = ["codex", "claudeCode", "zcode"];
+/**
+ * The providers whose hooks gate the install notice. Z Code's hooks only feed the island light —
+ * its sessions come from the zcode plugin and Z Code may not even be installed — so a machine
+ * without it must not be nagged to install anything; its row on the connection page still shows
+ * the state of its own hooks.
+ */
+const HOOK_NOTICE_PROVIDERS: HookAgentProvider[] = ["codex", "claudeCode"];
 export const AGENT_PROVIDER_LABELS: Record<AgentProvider, string> = {
   codex: "Codex",
   claudeCode: "Claude Code",
@@ -44,7 +52,9 @@ export function listAgentStatuses(snapshot: AgentStatusSnapshot): AgentStatusEnt
       key: provider,
       label: AGENT_PROVIDER_LABELS[provider],
       provider,
-      status: snapshot[provider],
+      // A snapshot written before a provider existed has no key for it; show idle rather than
+      // throwing, so adding a provider never blanks the whole island on an old status file.
+      status: snapshot[provider] ?? DEFAULT_AGENT_TASK_STATUS,
     })),
     ...(snapshot.others ?? []).map((other) => ({ key: other.id, label: other.name, provider: null, status: other })),
   ];
@@ -94,7 +104,7 @@ export type AgentHooksShown = Partial<Record<HookAgentProvider, boolean>>;
  */
 export function getAgentHooksNotice(state: AgentHooksState | null, shown?: AgentHooksShown): AgentHooksNotice | null {
   if (!state) return null;
-  const providers = AGENT_PROVIDERS.filter((provider) => shown?.[provider] ?? true);
+  const providers = HOOK_NOTICE_PROVIDERS.filter((provider) => shown?.[provider] ?? true);
   if (providers.length === 0) return null;
   if (state.scriptsOutdated || providers.some((provider) => state[provider] === "outdated")) {
     return "update";

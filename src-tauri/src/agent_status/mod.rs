@@ -58,6 +58,7 @@ mod workbuddy_cookie_vault;
 mod workbuddy_usage;
 pub(crate) mod zcode_api_key;
 mod zcode_credentials;
+mod zcode_hooks;
 pub(crate) mod zcode_usage;
 
 use serde::Serialize;
@@ -76,12 +77,14 @@ use markers::{
     CLAUDE_CODE_RUNNING_HOLD_FILE_NAME, CLAUDE_CODE_RUNNING_MARKER_FILE_NAME,
     CLAUDE_CODE_SAVED_INPUT_FILE_NAMES, CODEX_RUNNING_HOLD_FILE_NAME,
     CODEX_RUNNING_MARKER_FILE_NAME, CODEX_SAVED_INPUT_FILE_NAMES,
+    ZCODE_RUNNING_HOLD_FILE_NAME, ZCODE_RUNNING_MARKER_FILE_NAME, ZCODE_SAVED_INPUT_FILE_NAMES,
 };
 use snapshot::{
     agent_status_snapshot_from_persisted, current_unix_millis, default_agent_phase,
     default_agent_status_snapshot, default_persisted_agent_status, AgentStatusSnapshot,
     AgentTaskStatus, PersistedAgentStatus,
 };
+use zcode_hooks::{install_zcode_status_hooks, zcode_hooks_state};
 
 pub(super) const AGENT_STATUS_FILE_NAME: &str = "agent-status.json";
 
@@ -114,6 +117,8 @@ pub struct AgentHooksInstallResult {
     pub(super) status_path: String,
     pub(super) codex_config_path: String,
     pub(super) claude_config_path: String,
+    /// ZCode's own CLI config, which holds its hooks as JSON rather than a TOML block.
+    pub(super) zcode_config_path: String,
     pub(super) installed_at: i64,
 }
 
@@ -148,7 +153,7 @@ fn read_agent_status(app: AppHandle) -> Result<AgentStatusSnapshot, String> {
 
 #[tauri::command]
 pub fn clear_agent_status(app: AppHandle, provider: String) -> Result<AgentStatusSnapshot, String> {
-    if provider != "codex" && provider != "claudeCode" {
+    if provider != "codex" && provider != "claudeCode" && provider != "zcode" {
         return Err("Unsupported agent provider.".to_string());
     }
     let app_dir = app
@@ -190,6 +195,15 @@ pub fn clear_agent_status(app: AppHandle, provider: String) -> Result<AgentStatu
                 CLAUDE_CODE_RUNNING_MARKER_FILE_NAME,
                 CLAUDE_CODE_RUNNING_HOLD_FILE_NAME,
                 CLAUDE_CODE_SAVED_INPUT_FILE_NAMES,
+            );
+        }
+        "zcode" => {
+            persisted.zcode = cleared_status;
+            remove_agent_marker_files(
+                &app_dir,
+                ZCODE_RUNNING_MARKER_FILE_NAME,
+                ZCODE_RUNNING_HOLD_FILE_NAME,
+                ZCODE_SAVED_INPUT_FILE_NAMES,
             );
         }
         _ => {
@@ -239,6 +253,7 @@ fn install_agent_status_hooks_now(app: &AppHandle) -> Result<AgentHooksInstallRe
     let home_dir = windows_home_dir()?;
     let codex_config_path = home_dir.join(".codex").join("config.toml");
     let claude_config_path = home_dir.join(".claude").join("settings.json");
+    let zcode_config_path = home_dir.join(".zcode").join("cli").join("config.json");
 
     install_codex_status_hooks(
         &codex_config_path,
@@ -252,6 +267,7 @@ fn install_agent_status_hooks_now(app: &AppHandle) -> Result<AgentHooksInstallRe
         &status_script_path,
         approval_hook().as_ref(),
     )?;
+    install_zcode_status_hooks(&zcode_config_path, &app_dir)?;
 
     Ok(AgentHooksInstallResult {
         scripts_dir: app_dir.to_string_lossy().to_string(),
@@ -261,6 +277,7 @@ fn install_agent_status_hooks_now(app: &AppHandle) -> Result<AgentHooksInstallRe
             .to_string(),
         codex_config_path: codex_config_path.to_string_lossy().to_string(),
         claude_config_path: claude_config_path.to_string_lossy().to_string(),
+        zcode_config_path: zcode_config_path.to_string_lossy().to_string(),
         installed_at: current_unix_millis(),
     })
 }
@@ -427,8 +444,13 @@ fn read_agent_hooks_state(app_dir: &Path) -> Result<AgentHooksState, String> {
         &status_script_path,
         approval_hook().as_ref(),
     );
-    let hooks_installed =
-        codex != HookInstallState::NotInstalled || claude_code != HookInstallState::NotInstalled;
+    let zcode = zcode_hooks_state(
+        read(&home_dir.join(".zcode").join("cli").join("config.json")).as_deref(),
+        app_dir,
+    );
+    let hooks_installed = codex != HookInstallState::NotInstalled
+        || claude_code != HookInstallState::NotInstalled
+        || zcode != HookInstallState::NotInstalled;
     let scripts_outdated = script_outdated(
         read(&app_dir.join(AGENT_RUNNING_SCRIPT_FILE_NAME)).as_deref(),
         AGENT_RUNNING_SCRIPT,
@@ -450,6 +472,7 @@ fn read_agent_hooks_state(app_dir: &Path) -> Result<AgentHooksState, String> {
     Ok(AgentHooksState {
         codex,
         claude_code,
+        zcode,
         scripts_outdated,
     })
 }

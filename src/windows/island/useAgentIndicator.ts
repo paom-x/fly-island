@@ -13,8 +13,13 @@ export function useAgentIndicator(
 ) {
   // Agents switched off in Settings → AI Agent neither light the island nor name it.
   const shownAgentStatus = useMemo(
-    () => withoutHiddenProviders(agentStatus, { claudeCode: settings.agentShowClaudeCode, codex: settings.agentShowCodex }),
-    [agentStatus, settings.agentShowClaudeCode, settings.agentShowCodex],
+    () =>
+      withoutHiddenProviders(agentStatus, {
+        claudeCode: settings.agentShowClaudeCode,
+        codex: settings.agentShowCodex,
+        zcode: settings.agentShowZcode,
+      }),
+    [agentStatus, settings.agentShowClaudeCode, settings.agentShowCodex, settings.agentShowZcode],
   );
   const agentVisualState = useMemo(() => (settings.agentStatusEnabled ? getAgentVisualState(shownAgentStatus, activeAgentSessionCount) : "idle"), [shownAgentStatus, activeAgentSessionCount, settings.agentStatusEnabled]);
   const agentStatusLabel = useMemo(() => getAgentStatusLabel(shownAgentStatus, t, activeAgentSessionCount), [shownAgentStatus, activeAgentSessionCount, t]);

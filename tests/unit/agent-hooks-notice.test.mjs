@@ -2,13 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getAgentHooksNotice } from "../../src/features/agent-status/status.ts";
 
-const state = (codex, claudeCode, scriptsOutdated = false) => ({ codex, claudeCode, scriptsOutdated });
+const state = (codex, claudeCode, scriptsOutdated = false, zcode = "current") => ({ codex, claudeCode, zcode, scriptsOutdated });
 
 test("no notice before the state is read or when the hooks are current", () => {
   assert.equal(getAgentHooksNotice(null), null);
   assert.equal(getAgentHooksNotice(state("current", "current")), null);
   // Only one agent installed is fine: Install/Repair would not change anything for it.
   assert.equal(getAgentHooksNotice(state("notInstalled", "current")), null);
+});
+
+test("zcode hooks alone never raise or clear the notice", () => {
+  // Z Code hooks only feed the island light and Z Code may not be installed, so they gate nothing.
+  assert.equal(getAgentHooksNotice(state("current", "current", false, "notInstalled")), null);
+  assert.equal(getAgentHooksNotice(state("notInstalled", "notInstalled", false, "current")), "install");
 });
 
 test("hooks or scripts from an older version ask for an update", () => {

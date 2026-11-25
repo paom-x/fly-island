@@ -31,6 +31,10 @@ pub(super) struct PersistedAgentStatus {
     pub(super) codex: AgentTaskStatus,
     #[serde(default)]
     pub(super) claude_code: AgentTaskStatus,
+    /// ZCode reports itself through its own hooks (zcode_hooks.rs); a file written before that
+    /// existed has no `zcode` key, and `serde(default)` keeps it readable.
+    #[serde(default)]
+    pub(super) zcode: AgentTaskStatus,
     #[serde(default)]
     pub(super) updated_at: i64,
 }
@@ -40,6 +44,7 @@ pub(super) struct PersistedAgentStatus {
 pub struct AgentStatusSnapshot {
     pub(super) codex: AgentTaskStatus,
     pub(super) claude_code: AgentTaskStatus,
+    pub(super) zcode: AgentTaskStatus,
     pub(super) updated_at: i64,
     pub(super) status_path: String,
 }
@@ -52,6 +57,7 @@ pub(super) fn default_agent_status_snapshot(status_path: String) -> AgentStatusS
     AgentStatusSnapshot {
         codex: AgentTaskStatus::default(),
         claude_code: AgentTaskStatus::default(),
+        zcode: AgentTaskStatus::default(),
         updated_at: current_unix_millis(),
         status_path,
     }
@@ -61,6 +67,7 @@ pub(super) fn default_persisted_agent_status() -> PersistedAgentStatus {
     PersistedAgentStatus {
         codex: AgentTaskStatus::default(),
         claude_code: AgentTaskStatus::default(),
+        zcode: AgentTaskStatus::default(),
         updated_at: current_unix_millis(),
     }
 }
@@ -72,6 +79,7 @@ pub(super) fn agent_status_snapshot_from_persisted(
     AgentStatusSnapshot {
         codex: normalize_agent_task_status(persisted.codex),
         claude_code: normalize_agent_task_status(persisted.claude_code),
+        zcode: normalize_agent_task_status(persisted.zcode),
         updated_at: if persisted.updated_at > 0 {
             persisted.updated_at
         } else {

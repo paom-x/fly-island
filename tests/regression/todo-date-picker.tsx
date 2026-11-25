@@ -38,7 +38,7 @@ mockIPC((command, payload) => {
     case "get_clipboard_history": return { settings: { enabled: false, captureImages: true, maxItems: 100, shortcut: "Ctrl+Shift+V", shortcutEnabled: false }, items: [] };
     case "get_file_shelf": return { items: [] };
     case "get_agent_sessions": case "agent_approval_pending": case "get_qq_mail_state": return [];
-    case "get_agent_status": return { codex: { phase: "idle", updatedAt: 0 }, claudeCode: { phase: "idle", updatedAt: 0 }, updatedAt: 0, statusPath: "" };
+    case "get_agent_status": return { codex: { phase: "idle", updatedAt: 0 }, zcode: { phase: "idle", updatedAt: 0 }, claudeCode: { phase: "idle", updatedAt: 0 }, updatedAt: 0, statusPath: "" };
     case "get_media_state": return DEFAULT_MEDIA_STATE;
     case "get_foreground_fullscreen": return { active: false, onIslandMonitor: false };
     case "set_island_interaction": return "disabled";

@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  AGENT_PROVIDERS,
   DEFAULT_AGENT_STATUS,
   getAgentPhaseLabel,
   getAgentStatusLabel,
   getAgentVisualState,
   isAgentAttentionPhase,
+  listAgentStatuses,
   withoutHiddenProviders,
 } from "../../src/features/agent-status/status.ts";
 import { TRANSLATIONS } from "../../src/i18n/index.ts";
@@ -68,10 +70,26 @@ test("reported sources light the island and are named in the label", () => {
 
 test("agents switched off in settings neither light nor name the island", () => {
   const status = snapshot("failed", "running");
-  assert.equal(withoutHiddenProviders(status, { claudeCode: true, codex: true }), status);
-  const noCodex = withoutHiddenProviders(status, { claudeCode: true, codex: false });
+  assert.equal(withoutHiddenProviders(status, { claudeCode: true, codex: true, zcode: true }), status);
+  const noCodex = withoutHiddenProviders(status, { claudeCode: true, codex: false, zcode: true });
   assert.equal(noCodex.codex.phase, "idle");
   assert.equal(getAgentVisualState(noCodex), "running");
   assert.equal(getAgentStatusLabel(noCodex, t), t.agent.running("Claude Code"));
-  assert.equal(getAgentVisualState(withoutHiddenProviders(status, { claudeCode: false, codex: false })), "idle");
+  assert.equal(
+    getAgentVisualState(withoutHiddenProviders(status, { claudeCode: false, codex: false, zcode: false })),
+    "idle",
+  );
+});
+
+test("a snapshot written before a provider existed lists it as idle", () => {
+  // A status file written by an older build has no key for a provider added later; the island
+  // must show that provider as idle instead of throwing on the missing status.
+  const { zcode: _zcode, ...older } = DEFAULT_AGENT_STATUS;
+  const entries = listAgentStatuses(older);
+  assert.deepEqual(
+    entries.map(({ key }) => key),
+    AGENT_PROVIDERS,
+  );
+  assert.equal(entries.find(({ key }) => key === "zcode").status.phase, "idle");
+  assert.equal(getAgentVisualState(older), "idle");
 });

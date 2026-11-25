@@ -92,7 +92,7 @@ mockIPC((command, payload) => {
     case "agent_sessions_in_front": return [];
     case "agent_approval_pending": return [];
     case "list_plugin_views": return { views: [], status: [] };
-    case "get_agent_status": return { codex: { phase: "idle", updatedAt: 0 }, claudeCode: { phase: empty ? "idle" : "running", updatedAt: Date.now() }, updatedAt: Date.now(), statusPath: "" };
+    case "get_agent_status": return { codex: { phase: "idle", updatedAt: 0 }, zcode: { phase: "idle", updatedAt: 0 }, claudeCode: { phase: empty ? "idle" : "running", updatedAt: Date.now() }, updatedAt: Date.now(), statusPath: "" };
     case "get_media_state":
     case "media_play_pause":
     case "media_next":
@@ -113,7 +113,7 @@ mockIPC((command, payload) => {
     case "updater_configured": return query.has("update") && !empty;
     case "updater_check": return { version: "3.0.10", body: null };
     case "updater_download": return null;
-    case "get_agent_hooks_state": return { claudeCode: "installed", codex: "installed" };
+    case "get_agent_hooks_state": return { claudeCode: "installed", codex: "installed", zcode: "installed", scriptsOutdated: false };
     case "get_reply_marker_state": return { installed: false, outdated: false, path: "", content: "" };
     case "plugin:window|is_visible": return true;
     default: return null;

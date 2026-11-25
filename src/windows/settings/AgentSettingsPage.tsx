@@ -40,7 +40,7 @@ export function AgentSettingsPage({
         onChange={(agentStatusEnabled) => onSettingsChange({ ...settings, agentStatusEnabled })}
       />
       {/* The hooks live on the Connect AI tools page; most of what follows needs them. */}
-      <AgentHooksNotice onOpenConnect={onOpenConnect} shown={{ claudeCode: settings.agentShowClaudeCode, codex: settings.agentShowCodex }} />
+      <AgentHooksNotice onOpenConnect={onOpenConnect} shown={{ claudeCode: settings.agentShowClaudeCode, codex: settings.agentShowCodex, zcode: settings.agentShowZcode }} />
       <SettingsGroup title={t.settings.agent.sources.title}>
         <SettingsToggleRow
           title={t.settings.agent.sources.claudeCode}

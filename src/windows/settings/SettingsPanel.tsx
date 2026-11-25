@@ -141,7 +141,7 @@ export function SettingsPanel({
       {activeCategory === "clipboard" && <ClipboardSettingsPage settings={settings} onSettingsChange={setSettings} />}
       {activeCategory === "music" && <MusicSettingsPage settings={settings} onSettingsChange={setSettings} />}
       {activeCategory === "agents" && <AgentSettingsPage settings={settings} onSettingsChange={setSettings} onOpenConnect={() => setCategory("agentConnect")} />}
-      {activeCategory === "agentConnect" && <AgentConnectSettingsPage shown={{ claudeCode: settings.agentShowClaudeCode, codex: settings.agentShowCodex }} />}
+      {activeCategory === "agentConnect" && <AgentConnectSettingsPage shown={{ claudeCode: settings.agentShowClaudeCode, codex: settings.agentShowCodex, zcode: settings.agentShowZcode }} />}
       {(() => {
         const Page = STANDALONE_SETTINGS_PAGES[activeCategory];
         return Page ? <Page /> : null;

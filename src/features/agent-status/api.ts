@@ -4,10 +4,13 @@ import type { AgentEffortLabels } from "./effortLabels";
 
 // 与 src-tauri/src/agent_status/snapshot.rs 中的 AgentTaskStatus、AgentStatusSnapshot，以及 agent_status/mod.rs 中的 AgentHooksInstallResult 对应。
 export type AgentProvider = "codex" | "claudeCode" | "dsh" | "workbuddy" | "plugin" | NativeAgentProvider;
-/** Agents installed from the plugin market; Z Code has quota rings but no sessions yet. */
+/** Agents installed from the plugin market; Z Code's sessions come from its own store. */
 export type NativeAgentProvider = "cursor" | "kimiCode" | "hermes" | "zcode";
-/** Only these providers install lifecycle hooks and write agent-status.json. */
-export type HookAgentProvider = Exclude<AgentProvider, "dsh" | "workbuddy" | "plugin" | NativeAgentProvider>;
+/**
+ * Only these providers install lifecycle hooks and write agent-status.json. Z Code joins them
+ * through its own JSON hook config rather than a managed text block (agent_status/zcode_hooks.rs).
+ */
+export type HookAgentProvider = "codex" | "claudeCode" | "zcode";
 /** `waiting` (asked the user mid-turn) only comes from the session list, for Claude Code. */
 export type AgentTaskPhase = "idle" | "running" | "waiting" | "completed" | "failed" | "stale";
 
@@ -43,6 +46,8 @@ export type AgentHooksInstallResult = {
   statusPath: string;
   codexConfigPath: string;
   claudeConfigPath: string;
+  /** Z Code keeps its hooks in its own CLI config, which the island edits as JSON. */
+  zcodeConfigPath: string;
   installedAt: number;
 };
 

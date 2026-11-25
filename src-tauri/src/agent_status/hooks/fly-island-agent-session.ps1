@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory = $true, Position = 0)]
-  [ValidateSet("codex", "claudeCode")]
+  [ValidateSet("codex", "claudeCode", "zcode")]
   [string]$Provider,
 
   [Parameter(Mandatory = $true, Position = 1)]
@@ -24,7 +24,15 @@ function Get-StatusDirectory {
 # The agent's own process: the nearest ancestor of this hook named like the agent.
 function Find-AgentProcess {
   param([string]$Provider)
-  $names = if ($Provider -eq "codex") { @("codex.exe", "node.exe") } else { @("claude.exe", "node.exe") }
+  if ($Provider -eq "codex") {
+    $names = @("codex.exe", "node.exe")
+  } elseif ($Provider -eq "zcode") {
+    # ZCode is an Electron app: the hook runs under its bundled node, and the
+    # window that owns the session is ZCode.exe further up the tree.
+    $names = @("zcode.exe", "node.exe")
+  } else {
+    $names = @("claude.exe", "node.exe")
+  }
   # [wmi] is about twice as fast as Get-CimInstance here, which matters for Codex: its hooks
   # cannot run in the background yet, so this delays its first turn.
   $process = [wmi]"Win32_Process.Handle='$PID'"

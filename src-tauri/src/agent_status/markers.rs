@@ -10,6 +10,8 @@ pub(super) const CODEX_RUNNING_MARKER_FILE_NAME: &str = "agent-codex-running.fla
 pub(super) const CODEX_RUNNING_HOLD_FILE_NAME: &str = "agent-codex-running-hold.flag";
 pub(super) const CLAUDE_CODE_RUNNING_MARKER_FILE_NAME: &str = "agent-claudeCode-running.flag";
 pub(super) const CLAUDE_CODE_RUNNING_HOLD_FILE_NAME: &str = "agent-claudeCode-running-hold.flag";
+pub(super) const ZCODE_RUNNING_MARKER_FILE_NAME: &str = "agent-zcode-running.flag";
+pub(super) const ZCODE_RUNNING_HOLD_FILE_NAME: &str = "agent-zcode-running-hold.flag";
 /// Claude Code's latest waiting notification, saved by `fly-island-agent-running.cmd claudeCode
 /// notification`; see notifications.rs.
 pub(super) const CLAUDE_CODE_NOTIFICATION_FILE_NAME: &str = "agent-claudeCode-notification.json";
@@ -27,6 +29,8 @@ pub(super) const CLAUDE_CODE_SAVED_INPUT_FILE_NAMES: &[&str] = &[
     "agent-claudeCode-hook-input.json",
     CLAUDE_CODE_NOTIFICATION_FILE_NAME,
 ];
+pub(super) const ZCODE_NOTIFICATION_FILE_NAME: &str = "agent-zcode-notification.json";
+pub(super) const ZCODE_SAVED_INPUT_FILE_NAMES: &[&str] = &[ZCODE_NOTIFICATION_FILE_NAME];
 
 pub(super) const AGENT_RUNNING_STALE_AFTER_MS: i64 = 10 * 60 * 1000;
 
@@ -53,6 +57,17 @@ pub(super) fn apply_agent_running_markers(app_dir: &Path, snapshot: &mut AgentSt
     ) {
         snapshot.claude_code.phase = marker_status.phase;
         snapshot.claude_code.updated_at = marker_status.updated_at;
+    }
+
+    if let Some(marker_status) = active_agent_running_marker_status(
+        app_dir,
+        &snapshot.zcode,
+        ZCODE_RUNNING_MARKER_FILE_NAME,
+        ZCODE_RUNNING_HOLD_FILE_NAME,
+        now,
+    ) {
+        snapshot.zcode.phase = marker_status.phase;
+        snapshot.zcode.updated_at = marker_status.updated_at;
     }
 }
 
