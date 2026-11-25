@@ -103,6 +103,10 @@ pub(crate) use tauri_commands;
 /// Starts the trimmer. It sleeps first: a fresh start is busy with the island's first
 /// frames, and nothing has accumulated to trim yet.
 pub(crate) fn start(app: AppHandle) {
+    // The clock that decides when the browser may be parked starts with the app, not with the
+    // first hover: an island nobody ever opens should still shrink.
+    crate::webview_memory::note_activity(&app);
+
     let worker = thread::Builder::new()
         .name("memory-trim".into())
         .spawn(move || loop {
@@ -115,6 +119,9 @@ pub(crate) fn start(app: AppHandle) {
             thread::sleep(interval);
             if settled(&app) {
                 trim_children();
+                // The same quiet window is when the browser can be parked outright. It decides
+                // for itself whether the user has been away long enough.
+                crate::webview_memory::maybe_park(&app);
             }
         });
     if let Err(error) = worker {
@@ -124,7 +131,7 @@ pub(crate) fn start(app: AppHandle) {
 
 /// Whether nothing of ours is on screen but the collapsed island, so no window is being
 /// read or animated while its pages go out to disk.
-fn settled(app: &AppHandle) -> bool {
+pub(crate) fn settled(app: &AppHandle) -> bool {
     if !island::is_collapsed() {
         return false;
     }

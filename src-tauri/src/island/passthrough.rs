@@ -1,7 +1,7 @@
 //! Lets clicks fall through the transparent stage everywhere outside the island shape.
 
 use std::{thread, time::Duration};
-use tauri::{Emitter, WebviewWindow};
+use tauri::{Emitter, Manager, WebviewWindow};
 use windows::Win32::Foundation::HWND;
 
 use super::{
@@ -28,6 +28,13 @@ pub(crate) fn start_cursor_passthrough_loop(window: WebviewWindow) {
         let hwnd = window.hwnd().ok();
 
         loop {
+            // A parked browser has to be awake before the pointer can reach the island, so the
+            // wake-up rides on this loop instead of waiting for the webview to say something.
+            // Only while the pointer is actually on the island: the loop runs at 83 Hz and
+            // would otherwise reset the "left alone" clock forever.
+            if hwnd.is_none_or(cursor_is_inside_island) {
+                crate::webview_memory::note_activity(window.app_handle());
+            }
             // A press that started on the island (selecting text, dragging a slider or a
             // scrollbar) keeps the window taking the mouse until it is released: passing clicks
             // through mid-drag ended the gesture and dropped the selection being made.

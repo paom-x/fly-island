@@ -93,6 +93,11 @@ pub fn set_island_interaction(
 ) -> Result<String, String> {
     let window = main_window(&app)?;
     let mode = IslandMode::from_value(&mode)?;
+    if !matches!(mode, IslandMode::Collapsed) {
+        // The island is about to be on screen and animated: make sure its browser is not
+        // still parked from a long idle.
+        crate::webview_memory::note_activity(&app);
+    }
     let previous_state = read_window_state();
     let collapsed_scale = collapsed_scale.clamp(0.75, 1.4);
     let collapsed_height = collapsed_height.filter(|height| height.is_finite())

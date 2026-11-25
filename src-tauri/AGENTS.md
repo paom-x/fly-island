@@ -35,8 +35,9 @@ src-tauri/src/
 ├── clipboard_window/        # 剪贴板历史独立窗口：按需创建、显示、关闭与位置记忆
 ├── legacy_migration/        # 改名前安装的一次性迁移（数据目录、自启、凭据、日志名、Hook 文本），在 tauri::Builder 前运行；唯一允许出现旧产品名的 Rust 模块
 ├── messenger_activation.rs
-├── memory_trim.rs         # 岛上只剩收起条时，每 30 秒清一次 WebView2 子进程的工作集（win32/process_memory.rs 的 trim_working_set）
+├── memory_trim.rs         # 岛上只剩收起条时按内存策略清 WebView2 子进程的工作集（win32/process_memory.rs），并叫 webview_memory 判断要不要降档
 ├── notification_diagnostics.rs
+├── webview_memory.rs       # 面板十分钟没打开就请 WebView2 降内存档（win32/webview.rs 的 set_low_memory）
 └── win32/                   # Win32 / COM 的安全封装，crate 中唯一允许 unsafe 的地方：window（窗口查询、枚举、前台切换）、
                              # message_window（隐藏消息窗口与安全的窗口过程）、hotkey、clipboard、shell_hook、input、
                              # com（COM / WinRT 初始化守卫）、audio、fonts（DirectWrite 字体列表）、ole（文件拖出）、process / process_times、process_job（插件进程树退出清理）、process_tree（父进程表与子孙进程）、process_memory（远端模块 + 清工作集）、registry、

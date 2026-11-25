@@ -10,6 +10,7 @@ mod lyrics;
 mod media_control;
 mod media_plugins;
 mod memory_trim;
+mod webview_memory;
 mod legacy_migration;
 mod plugin_host;
 mod eye_care;
