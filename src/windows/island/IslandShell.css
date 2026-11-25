@@ -250,6 +250,15 @@
   transform: var(--island-panel-hidden);
 }
 
+/*
+ * Collapsed, the pages are invisible anyway: stop laying them out and painting them. Their state
+ * (session cards, plugin rows, the music wave) stays mounted, but a hidden page costs no frame
+ * work at all while the island shows only its bar (2026-11-26).
+ */
+.island--collapsed:not(.island--preparing) .island__expanded {
+  content-visibility: hidden;
+}
+
 .island--preparing.island--collapsed .island__surface {
   overflow: visible;
 }
