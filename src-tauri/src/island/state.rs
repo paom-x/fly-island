@@ -194,6 +194,11 @@ impl IslandWindowState {
         (width * scale, height * scale)
     }
 
+    /// Whether the island is showing only its collapsed strip.
+    pub(super) fn is_collapsed(self) -> bool {
+        matches!(self.mode, IslandMode::Collapsed)
+    }
+
     pub(super) fn can_start_drag(self) -> bool {
         matches!(self.mode, IslandMode::Collapsed)
             && !self.is_tucked

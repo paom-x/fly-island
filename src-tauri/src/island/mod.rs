@@ -276,6 +276,12 @@ pub fn show_ready_island(app: AppHandle) -> Result<(), String> {
     show_island_window(&app, !crate::system::startup::launched_at_startup())
 }
 
+/// Whether the island currently shows only its collapsed strip. The memory trimmer reads
+/// this, so it stays away while the panel is open.
+pub(crate) fn is_collapsed() -> bool {
+    read_window_state().is_collapsed()
+}
+
 pub(crate) fn main_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     app.get_webview_window(WINDOW_LABEL)
         .ok_or_else(|| "Main island window was not found.".to_string())

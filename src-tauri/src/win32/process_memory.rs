@@ -20,9 +20,10 @@ use windows::Win32::{
             VirtualQueryEx, MEMORY_BASIC_INFORMATION, MEM_COMMIT, MEM_IMAGE, PAGE_READWRITE,
             PAGE_WRITECOPY,
         },
+        ProcessStatus::EmptyWorkingSet,
         Threading::{
-            OpenProcess, WaitForSingleObject, PROCESS_QUERY_INFORMATION, PROCESS_SYNCHRONIZE,
-            PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE,
+            OpenProcess, WaitForSingleObject, PROCESS_QUERY_INFORMATION, PROCESS_QUERY_LIMITED_INFORMATION,
+            PROCESS_SET_QUOTA, PROCESS_SYNCHRONIZE, PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE,
         },
     },
 };
@@ -31,6 +32,19 @@ use super::{
     process::{image_path_of, same_path, ProcessHandle},
     process_times::start_time_of,
 };
+
+/// Asks Windows to page `process_id`'s working set out to the page file, which gives the
+/// memory back to the rest of the system; the pages come back in on first touch. Returns
+/// whether the call went through: a process that has already exited reports `false`.
+pub(crate) fn trim_working_set(process_id: u32) -> bool {
+    let access = PROCESS_SET_QUOTA | PROCESS_QUERY_LIMITED_INFORMATION;
+    // SAFETY: OpenProcess has no pointer arguments; ProcessHandle owns the result.
+    let Ok(process) = (unsafe { OpenProcess(access, false, process_id) }).map(ProcessHandle) else {
+        return false;
+    };
+    // SAFETY: `process` is a live handle opened with the rights EmptyWorkingSet needs.
+    unsafe { EmptyWorkingSet(process.0) }.is_ok()
+}
 
 pub(crate) struct RemoteModule {
     process: ProcessHandle,

@@ -35,13 +35,14 @@ src-tauri/src/
 ├── clipboard_window/        # 剪贴板历史独立窗口：按需创建、显示、关闭与位置记忆
 ├── legacy_migration/        # 改名前安装的一次性迁移（数据目录、自启、凭据、日志名、Hook 文本），在 tauri::Builder 前运行；唯一允许出现旧产品名的 Rust 模块
 ├── messenger_activation.rs
+├── memory_trim.rs         # 岛上只剩收起条时，每 30 秒清一次 WebView2 子进程的工作集（win32/process_memory.rs 的 trim_working_set）
 ├── notification_diagnostics.rs
 └── win32/                   # Win32 / COM 的安全封装，crate 中唯一允许 unsafe 的地方：window（窗口查询、枚举、前台切换）、
                              # message_window（隐藏消息窗口与安全的窗口过程）、hotkey、clipboard、shell_hook、input、
-                             # com（COM / WinRT 初始化守卫）、audio、fonts（DirectWrite 字体列表）、ole（文件拖出）、process / process_times、process_job（插件进程树退出清理）、registry、
+                             # com（COM / WinRT 初始化守卫）、audio、fonts（DirectWrite 字体列表）、ole（文件拖出）、process / process_times、process_job（插件进程树退出清理）、process_tree（父进程表与子孙进程）、process_memory（远端模块 + 清工作集）、registry、
                              # notification_state（前台是否有全屏程序）、shell_open（不弹系统错误框地打开协议）、
                              # task_switcher（让主窗口不进 Alt+Tab）、known_folder（下载文件夹等已知文件夹）、
-                             # icon、chinese、process_env / process_tree / process_memory、file_version（exe 文件版本）、std_handle（重定向标准错误、本地时间）、uia_tabs / uia_list、caption_close、taskbar
+                             # icon、chinese、process_env、file_version（exe 文件版本）、std_handle（重定向标准错误、本地时间）、uia_tabs / uia_list、caption_close、taskbar
 ```
 
 ## lib.rs 与模块组织

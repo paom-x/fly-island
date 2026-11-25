@@ -30,6 +30,23 @@ pub(crate) fn parent_process_ids() -> HashMap<u32, u32> {
     parents
 }
 
+/// Every process that descends from `root_id`, root excluded, from the parent map above.
+/// A process whose parent has exited is not a descendant of anything, which is why the
+/// map is walked instead of reading parent ids one by one on demand.
+pub(crate) fn descendants_of(root_id: u32, parents: &HashMap<u32, u32>) -> Vec<u32> {
+    let mut descendants = Vec::new();
+    let mut walked = vec![root_id];
+    while let Some(parent) = walked.pop() {
+        for (&process_id, &process_parent) in parents {
+            if process_parent == parent && process_id != root_id && !descendants.contains(&process_id) {
+                descendants.push(process_id);
+                walked.push(process_id);
+            }
+        }
+    }
+    descendants
+}
+
 /// Ids of the running processes whose executable file name is `exe_name` ("codex.exe"), matched
 /// case-insensitively. Empty when the snapshot cannot be taken.
 pub(crate) fn process_ids_named(exe_name: &str) -> Vec<u32> {
@@ -55,6 +72,15 @@ pub(crate) fn process_ids_named(exe_name: &str) -> Vec<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn descendants_walk_down_from_the_root_only() {
+        let parents = HashMap::from([(10, 1), (11, 10), (12, 11), (13, 1), (14, 12)]);
+        let mut descendants = descendants_of(10, &parents);
+        descendants.sort();
+        assert_eq!(descendants, vec![11, 12, 14]);
+        assert!(descendants_of(10, &HashMap::new()).is_empty());
+    }
 
     #[test]
     fn the_current_process_is_listed_with_its_parent() {

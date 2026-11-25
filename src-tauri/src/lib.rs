@@ -9,6 +9,7 @@ mod island;
 mod lyrics;
 mod media_control;
 mod media_plugins;
+mod memory_trim;
 mod legacy_migration;
 mod plugin_host;
 mod eye_care;
@@ -129,6 +130,7 @@ pub fn run() {
                 island::start_cursor_passthrough_loop(window);
             }
             system::fullscreen::start(app.handle());
+            memory_trim::start(app.handle().clone());
             media_plugins::init(app.handle());
             if let Err(error) = plugin_host::init(app.handle()) {
                 eprintln!("failed to initialize plugins: {error}");
