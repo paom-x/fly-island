@@ -17,7 +17,10 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use tauri::{AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, Position, Size};
+use tauri::{
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, Position, Size, WebviewUrl,
+    WebviewWindow, WebviewWindowBuilder,
+};
 use windows::Win32::{
     Foundation::{HWND, LPARAM, LRESULT, WPARAM},
     UI::WindowsAndMessaging::{WM_APP, WM_HOTKEY},
@@ -62,11 +65,40 @@ pub fn init(app: &AppHandle) {
     }
 }
 
+/// The translation window, created the first time it is needed.
+///
+/// It is not created at startup: an idle WebView2 renderer costs about 78 MB of working set
+/// (measured 2026-11-25), and the shortcut goes unused for most sessions. Once created the window
+/// is kept for the rest of the session, so repeated toggles stay instant.
+///
+/// These builder calls repeat the values of this window's `tauri.conf.json` entry. That entry no
+/// longer creates the window, so a change here is what takes effect.
+fn ensure_window(app: &AppHandle) -> Result<WebviewWindow, String> {
+    if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
+        return Ok(window);
+    }
+    WebviewWindowBuilder::new(
+        app,
+        WINDOW_LABEL,
+        WebviewUrl::App("index.html?window=translation".into()),
+    )
+    .title("fly-island 翻译")
+    .inner_size(480.0, 640.0)
+    .min_inner_size(480.0, 380.0)
+    .decorations(false)
+    .transparent(true)
+    .resizable(true)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .visible(false)
+    .shadow(false)
+    .build()
+    .map_err(|error| error.to_string())
+}
+
 #[tauri::command]
 pub fn toggle_translation_window(app: AppHandle) -> Result<(), String> {
-    let window = app
-        .get_webview_window(WINDOW_LABEL)
-        .ok_or_else(|| "Translation window was not found.".to_string())?;
+    let window = ensure_window(&app)?;
     if window.is_visible().map_err(|error| error.to_string())? {
         return window.hide().map_err(|error| error.to_string());
     }
@@ -129,12 +161,13 @@ pub fn toggle_translation_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Hides the window. A window that was never created is already hidden, so this succeeds.
 #[tauri::command]
 pub fn hide_translation_window(app: AppHandle) -> Result<(), String> {
-    app.get_webview_window(WINDOW_LABEL)
-        .ok_or_else(|| "Translation window was not found.".to_string())?
-        .hide()
-        .map_err(|error| error.to_string())
+    match app.get_webview_window(WINDOW_LABEL) {
+        Some(window) => window.hide().map_err(|error| error.to_string()),
+        None => Ok(()),
+    }
 }
 
 #[tauri::command]

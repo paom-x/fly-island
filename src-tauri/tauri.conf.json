@@ -26,6 +26,7 @@
       },
       {
         "label": "translation",
+        "create": false,
         "title": "fly-island 翻译",
         "url": "index.html?window=translation",
         "width": 480,
