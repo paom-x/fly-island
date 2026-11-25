@@ -9,7 +9,7 @@ export type NativeAgentSettings = Pick<IslandSettings, "agentShowCursor" | "agen
 export const NATIVE_AGENTS: readonly { id: NativeAgentProvider; setting: keyof NativeAgentSettings; sessions: boolean; quota: boolean }[] = [
   { id: "cursor", setting: "agentShowCursor", sessions: true, quota: false },
   { id: "kimiCode", setting: "agentShowKimiCode", sessions: true, quota: true },
-  { id: "zcode", setting: "agentShowZcode", sessions: false, quota: true },
+  { id: "zcode", setting: "agentShowZcode", sessions: true, quota: true },
   { id: "hermes", setting: "agentShowHermes", sessions: true, quota: false },
 ];
 

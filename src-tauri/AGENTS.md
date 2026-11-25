@@ -16,8 +16,8 @@ src-tauri/src/
 │                            #   hook_migration.rs：启动时把改名前写入 Codex / Claude Code 配置的 Hook 重写到新脚本
 │                            #   reply_marker.rs：可选的回复状态标记（B9），增删 CLAUDE.md 里岛屿自己的那段说明、识别回复末行的标记
 │                            #   dsh_desktop.rs / dsh_sessions.rs / dsh_credentials.rs / dsh_usage.rs：DSH 桌面端本地会话检查点、只读凭据与官方余额查询
-│                            #   workbuddy_sessions.rs：WorkBuddy 桌面端本地会话记录；workbuddy_connection.rs / workbuddy_auth.rs / workbuddy_cookie_vault.rs / workbuddy_usage.rs：WorkBuddy 官网独立登录窗口、续期策略、凭据副本与积分缓存
-│                            #   zcode_credentials.rs / zcode_api_key.rs / zcode_usage.rs：Z Code 桌面凭据、Credential Manager 中的 Coding Plan API Key 与额度查询
+│                            #   workbuddy_sessions.rs：WorkBuddy 桌面端本地会话记录；workbuddy_connection.rs / workbuddy_auth.rs / workbuddy_cookie_vault.rs / workbuddy_usage.rs：WorkBuddy 官网独立登录窗口、续期策略、凭据副本与积分缓存；workbuddy_lifecycle.rs：隐藏浏览器建窗与闲置释放的后台调度
+│                            #   zcode_hooks.rs：Z Code 状态钩子（写进 ~/.zcode/cli/config.json）；zcode_sessions.rs：Z Code 本地会话记录（~/.zcode/cli/db/db.sqlite）；zcode_credentials.rs / zcode_api_key.rs / zcode_usage.rs：Z Code 桌面凭据、Credential Manager 中的 Coding Plan API Key 与额度查询
 ├── app_log/                 # 问题排查日志（默认关闭）：开启后把标准错误接到管道写入 logs/，前端的报错经 append_app_log 写入；file.rs 负责一份备份的轮转
 ├── system/                  # 开机自启（注册表）、更新代理与配置、待办 Markdown 导出与受限同步读写（todo_sync）、已安装字体（fonts）、不合成 Alt 键地聚焦自己的窗口（window_focus）
 ├── clipboard_history/

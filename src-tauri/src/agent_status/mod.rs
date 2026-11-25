@@ -60,6 +60,7 @@ mod workbuddy_usage;
 pub(crate) mod zcode_api_key;
 mod zcode_credentials;
 mod zcode_hooks;
+mod zcode_sessions;
 pub(crate) mod zcode_usage;
 
 use serde::Serialize;
@@ -318,6 +319,9 @@ pub async fn list_agent_sessions(
             if wants("hermes") {
                 sessions.extend(throttled(&HERMES, window_ms, || hermes_sessions::list_sessions(&home_dir, current_unix_millis(), window_ms)));
             }
+            if wants("zcode") {
+                sessions.extend(throttled(&ZCODE, window_ms, || zcode_sessions::list_sessions(&home_dir, current_unix_millis(), window_ms)));
+            }
             let is_active = |phase: &str| matches!(phase, "running" | "waiting");
             sessions.sort_by_key(|session| (!is_active(session.phase), -session.updated_at));
             sessions.truncate(12);
@@ -332,6 +336,7 @@ type NativeSessions = std::sync::Mutex<Option<(std::time::Instant, i64, Vec<sess
 static CURSOR: NativeSessions = std::sync::Mutex::new(None);
 static KIMI: NativeSessions = std::sync::Mutex::new(None);
 static HERMES: NativeSessions = std::sync::Mutex::new(None);
+static ZCODE: NativeSessions = std::sync::Mutex::new(None);
 
 /// The plugin-market agents are read at most every two seconds: the island asks every second,
 /// and Cursor's store is a database rather than a file whose change time says enough.

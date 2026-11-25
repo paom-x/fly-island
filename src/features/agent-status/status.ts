@@ -20,9 +20,9 @@ export const DEFAULT_AGENT_STATUS: AgentStatusSnapshot = {
 export const AGENT_PROVIDERS: HookAgentProvider[] = ["codex", "claudeCode", "zcode"];
 /**
  * The providers whose hooks gate the install notice. Z Code's hooks only feed the island light —
- * its sessions come from the zcode plugin and Z Code may not even be installed — so a machine
- * without it must not be nagged to install anything; its row on the connection page still shows
- * the state of its own hooks.
+ * its sessions are read from Z Code's own store, and Z Code may not even be installed — so a
+ * machine without it must not be nagged to install anything; its row on the connection page still
+ * shows the state of its own hooks.
  */
 const HOOK_NOTICE_PROVIDERS: HookAgentProvider[] = ["codex", "claudeCode"];
 export const AGENT_PROVIDER_LABELS: Record<AgentProvider, string> = {
