@@ -20,3 +20,17 @@ test("hooks or scripts from an older version ask for an update", () => {
 test("nothing installed asks for an install", () => {
   assert.equal(getAgentHooksNotice(state("notInstalled", "notInstalled")), "install");
 });
+
+test("an agent switched off cannot raise the notice", () => {
+  // Both sources off: the hooks serve nothing the user can see, so say nothing at all.
+  assert.equal(getAgentHooksNotice(state("notInstalled", "notInstalled"), { codex: false, claudeCode: false }), null);
+  assert.equal(getAgentHooksNotice(state("outdated", "outdated"), { codex: false, claudeCode: false }), null);
+  assert.equal(getAgentHooksNotice(state("current", "current", true), { codex: false, claudeCode: false }), null);
+  // One switched off leaves the notice decided by the other.
+  assert.equal(getAgentHooksNotice(state("notInstalled", "current"), { codex: false, claudeCode: true }), null);
+  assert.equal(getAgentHooksNotice(state("current", "notInstalled"), { codex: false, claudeCode: true }), "install");
+  assert.equal(getAgentHooksNotice(state("outdated", "current"), { codex: true, claudeCode: false }), "update");
+  assert.equal(getAgentHooksNotice(state("outdated", "current"), { codex: false, claudeCode: true }), null);
+  // A source the caller says nothing about still counts, as before.
+  assert.equal(getAgentHooksNotice(state("notInstalled", "notInstalled"), { claudeCode: true }), "install");
+});

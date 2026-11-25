@@ -4,7 +4,7 @@ import { SettingsLinkButton } from "../../components/settings/SettingsLinkButton
 import { SettingsRow } from "../../components/settings/SettingsRow";
 import { useTranslation } from "../../i18n";
 import type { AgentHooksInstallResult, AgentHooksState, AgentStatusSnapshot } from "./api";
-import { getAgentHooksNotice, getAgentPhaseLabel, getAgentStatusLabel, isAgentAttentionPhase, listAgentStatuses, type AgentHooksInstallState } from "./status";
+import { getAgentHooksNotice, getAgentPhaseLabel, getAgentStatusLabel, isAgentAttentionPhase, listAgentStatuses, type AgentHooksInstallState, type AgentHooksShown } from "./status";
 import "./AgentHooksSettingsSection.css";
 
 /**
@@ -12,7 +12,7 @@ import "./AgentHooksSettingsSection.css";
  * row per agent (with a way to clear one stuck on an error), and under the card what the last
  * install said, or that the installed hooks are missing or old.
  */
-export function AgentHooksSettingsSection({ agentStatus, clearingAgentProvider, agentHooksInstallState, agentHooksInstallResult, agentHooksInstallError, agentHooksState, onClearAgentStatus, onInstallAgentHooks }: {
+export function AgentHooksSettingsSection({ agentStatus, clearingAgentProvider, agentHooksInstallState, agentHooksInstallResult, agentHooksInstallError, agentHooksState, shown, onClearAgentStatus, onInstallAgentHooks }: {
   agentStatus: AgentStatusSnapshot;
   /** The provider or reported source id being cleared. */
   clearingAgentProvider: string | null;
@@ -21,12 +21,14 @@ export function AgentHooksSettingsSection({ agentStatus, clearingAgentProvider, 
   agentHooksInstallError: string;
   /** Null until read; outdated hooks get a notice asking for Install/Repair. */
   agentHooksState: AgentHooksState | null;
+  /** Which hooked agents are switched on; the notice only speaks about those. */
+  shown: AgentHooksShown;
   onClearAgentStatus: (provider: string) => void;
   onInstallAgentHooks: () => void;
 }) {
   const t = useTranslation();
   const text = t.settings.agent;
-  const hooksNotice = getAgentHooksNotice(agentHooksState);
+  const hooksNotice = getAgentHooksNotice(agentHooksState, shown);
   const installLabel = agentHooksInstallState === "installing" ? text.installing : agentHooksInstallState === "installed" ? text.installed : text.install;
 
   const footer =

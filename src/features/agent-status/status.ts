@@ -82,12 +82,24 @@ export function getAgentVisualState(snapshot: AgentStatusSnapshot, activeSession
 /** What the settings page should say about the installed hooks, or null when they are current. */
 export type AgentHooksNotice = "update" | "install";
 
-export function getAgentHooksNotice(state: AgentHooksState | null): AgentHooksNotice | null {
+/** Which hooked agents Settings → AI Agent still shows; a source switched off reads nothing from its hooks. */
+export type AgentHooksShown = Partial<Record<HookAgentProvider, boolean>>;
+
+/**
+ * The notice about the hooks, judged only on the agents the user left switched on. Turning a source
+ * off in Settings → AI Agent already hides its sessions, so its missing or old hooks cannot change
+ * anything the user sees, and asking to install them would be pure noise; with both switched off
+ * there is no notice at all. `shown` omitted counts every agent, for callers that only know the
+ * install state.
+ */
+export function getAgentHooksNotice(state: AgentHooksState | null, shown?: AgentHooksShown): AgentHooksNotice | null {
   if (!state) return null;
-  if (state.scriptsOutdated || AGENT_PROVIDERS.some((provider) => state[provider] === "outdated")) {
+  const providers = AGENT_PROVIDERS.filter((provider) => shown?.[provider] ?? true);
+  if (providers.length === 0) return null;
+  if (state.scriptsOutdated || providers.some((provider) => state[provider] === "outdated")) {
     return "update";
   }
-  return AGENT_PROVIDERS.every((provider) => state[provider] === "notInstalled") ? "install" : null;
+  return providers.every((provider) => state[provider] === "notInstalled") ? "install" : null;
 }
 
 /** What the status light says (its aria-label); `activeSessions` running in the session list also count as running. */
