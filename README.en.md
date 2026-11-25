@@ -36,7 +36,7 @@
 
 ## What is this?
 
-fly-island is a Windows-first Dynamic Island. WeChat, QQ and mail messages pop up right on the island. You can see at a glance what Claude Code, Codex or DSH is doing and whether it needs your approval. Synced lyrics, a file shelf, clipboard history, quick translation and to-dos all live in the same small island at the top of the screen.
+fly-island is a Windows-first Dynamic Island. WeChat, QQ and mail messages pop up right on the island. You can see at a glance what Claude Code, Codex, Z Code or DSH is doing and whether it needs your approval. Synced lyrics, a file shelf, clipboard history, quick translation and to-dos all live in the same small island at the top of the screen.
 
 It is an ultra-light, frameless, always-on-top island using about 0.2–0.5% of memory. It expands when you need it and tucks away when you are done.
 
@@ -66,7 +66,7 @@ New messages pop up on the island: who sent it and what they said, at a glance. 
 
 ## Stop babysitting your AI coding tools
 
-Every Claude Code and Codex session shows up on the island: which one is running, which one is done, which one is waiting for you. Your remaining Claude / Codex quota is there too.
+Every Claude Code, Codex and Z Code session shows up on the island: which one is running, which one is done, which one is waiting for you. Your remaining Claude / Codex quota is there too.
 
 <p align="center"><img src="docs/assets/screenshots/agents.webp" alt="AI agent sessions and quota rings on the island" width="620"></p>
 

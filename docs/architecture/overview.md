@@ -36,9 +36,11 @@ Codex 的会话展示仍由 `agent_status/session_scan.rs` 读取 rollout 尾部
 
 Agent 的 DSH 桌面端来源由 `agent_status/dsh_sessions.rs`（只读本地检查点、合并去重、宿主聚焦）、dsh_desktop.rs（官方与社区宿主识别、目录发现）、`dsh_credentials.rs`（受限凭据读取）和 `dsh_usage.rs`（官方余额只读查询与内存缓存）承担；从现有会话命令和聚焦命令接入，余额有独立的 `get_dsh_usage` 命令。前端仍在 `features/agent-status/`，余额展示在 `DshQuotaRing.tsx`，纯逻辑在 `dshUsage.ts`。详见 [DSH 接入说明](../deepseek-harness.md)。
 
-WorkBuddy 桌面端会话由 `agent_status/workbuddy_sessions.rs` 只读解析（本地会话记录与打开中的会话登记，聚焦主窗口），从现有会话命令和聚焦命令接入。WorkBuddy 的 `agent_status/workbuddy_connection.rs` 管理专用 WebView2 官网登录和后台续期，`workbuddy_auth.rs` 决定续期时间与失败退避，`workbuddy_cookie_vault.rs` 保存并恢复凭据副本，`workbuddy_usage.rs` 读取积分汇总。远程登录窗口 `workbuddy-sign-in` 使用独立浏览器配置，由本地设置页启动。岛屿和设置页共享原生余额缓存，额度环按 `agentQuotaSources` 选择。
+WorkBuddy 桌面端会话由 `agent_status/workbuddy_sessions.rs` 只读解析（本地会话记录与打开中的会话登记，聚焦主窗口），从现有会话命令和聚焦命令接入。WorkBuddy 的 `agent_status/workbuddy_connection.rs` 管理专用 WebView2 官网登录和后台续期，`workbuddy_auth.rs` 决定续期时间与失败退避，`workbuddy_cookie_vault.rs` 保存并恢复凭据副本，`workbuddy_usage.rs` 读取积分汇总。远程登录窗口 `workbuddy-sign-in` 使用独立浏览器配置，由本地设置页启动。岛屿和设置页共享原生余额缓存，额度环按 `agentQuotaSources` 选择。后台续期的调度循环与隐藏窗生命周期在 `workbuddy_lifecycle.rs`：每次刷新结束、登录完成或关闭窗口后都排一个 30 秒的空闲期，到期若窗口既不可见、也不在登录流程里就 `destroy` 它（连同独立 WebView2 环境一起回收，约 300 MB）；下一次刷新前要等 5 秒冷却，避免撞上还没退出的浏览器进程占着 profile。
 
-Z Code 的 Coding Plan 额度由 `agent_status/zcode_usage.rs` 查询，优先读取 Windows 凭据管理器中的手动 API Key 配置（`zcode_api_key.rs`），未配置时回退到 Z Code 桌面版登录凭据；设置页只拿到 Key 是否存在与掩码。额度缓存在原生内存中，Key 或平台变更时清除。
+Z Code 的 Coding Plan 额度由 `agent_status/zcode_usage.rs` 查询，优先读取 Windows 凭据管理器中的手动 API Key 配置（`zcode_api_key.rs`），未配置时回退到 Z Code 桌面版登录凭据；设置页只拿到 Key 是否存在与掩码。额度缓存在原生内存中，Key 或平台变更时清除。状态灯与审批走 `agent_status/zcode_hooks.rs` 写进 `~/.zcode/cli/config.json` 的钩子：SessionStart / UserPromptSubmit / Stop 常驻，PreToolUse 只在开启岛上审批时安装（它会对每个匹配的工具调用起一次 PowerShell，空转一次约 2 秒）；会话由 `zcode_sessions.rs` 只读 `~/.zcode/cli/db/db.sqlite` 的 `session` / `message` / `part` 表，用 `session_runtime_presence.process_id` 是否存活判断在跑，phase 只信 `last_outcome`。审批答复按 Z Code 的 PreToolUse 格式返回，脚本自己超时后输出空、把决定交回 Z Code 的原生弹框。
+
+岛上只剩收起条时，`memory_trim.rs` 每 30 秒检查一次：岛处于收起态且没有其它可见窗口，就对自己的 WebView2 子孙进程调用 `EmptyWorkingSet`（`win32/process_memory.rs` 的 `trim_working_set`，子孙进程由 `win32/process_tree.rs` 的 `descendants_of` 收集，主进程不动）。清的是工作集而不是私有提交，页面被换出到磁盘，实测内存数字回落约 300 MB，再次展开会重新读回。快捷翻译窗口改为首次打开时才创建（`translation/mod.rs` 的 `ensure_window`，`tauri.conf.json` 里 `"create": false`），不再常驻一个渲染进程。
 
 微信的进程解析、窗口归属和主窗口选择统一在 `wechat_reminders/source.rs`，供打开动作、提醒监听、摘要读取和探测程序复用；需比较完整路径时使用 `win32/process.rs` 的 canonicalize 与归一化回退。微信摘要开启时，微信提醒服务通过 `win32/caption_close.rs` 将微信关闭按钮的点击转为最小化，通过 `win32/taskbar.rs` 控制最小化窗口的任务栏按钮。
 

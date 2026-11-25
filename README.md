@@ -35,7 +35,7 @@
 
 ## 这是什么
 
-fly-island 是一款 Windows 优先的灵动岛。微信、QQ 和邮箱消息直接弹到岛上；Claude Code、Codex、DSH 等 Agent 跑到哪、要不要你审批，一眼就知道；同步歌词、文件中转、剪贴板历史、快捷翻译和待办，也都收在屏幕顶部这座小岛里。
+fly-island 是一款 Windows 优先的灵动岛。微信、QQ 和邮箱消息直接弹到岛上；Claude Code、Codex、Z Code、DSH 等 Agent 跑到哪、要不要你审批，一眼就知道；同步歌词、文件中转、剪贴板历史、快捷翻译和待办，也都收在屏幕顶部这座小岛里。
 
 它是一个极轻量、无边框、始终置顶的悬浮岛，内存占用约 0.2%~0.5%，需要时展开，用完收起。
 
@@ -63,7 +63,7 @@ iPhone 的灵动岛把通知、计时、媒体控制收在一个小岛上，缩�
 
 ## AI 写代码时，不用一直盯着终端
 
-Claude Code、Codex 等 AI 工具的每个会话都会显示在岛上：哪个在跑、哪个做完了、哪个在等你回话。还能看到 Claude / Codex 的剩余额度。
+Claude Code、Codex、Z Code 等 AI 工具的每个会话都会显示在岛上：哪个在跑、哪个做完了、哪个在等你回话。还能看到 Claude / Codex 的剩余额度。
 
 <p align="center"><img src="docs/assets/screenshots/agents.webp" alt="岛上的 AI Agent 会话列表和额度环" width="620"></p>
 
