@@ -4,7 +4,18 @@ import { SettingsLinkButton } from "../../components/settings/SettingsLinkButton
 import { SettingsRow } from "../../components/settings/SettingsRow";
 import { useTranslation } from "../../i18n";
 import type { AgentHooksInstallResult, AgentHooksState, AgentStatusSnapshot } from "./api";
-import { getAgentHooksNotice, getAgentPhaseLabel, getAgentStatusLabel, isAgentAttentionPhase, listAgentStatuses, type AgentHooksInstallState, type AgentHooksShown } from "./status";
+import {
+  AGENT_PROVIDERS,
+  getAgentHooksNotice,
+  getAgentPhaseLabel,
+  getAgentStatusLabel,
+  isAgentAttentionPhase,
+  listAgentLightStatuses,
+  liveAgentStatuses,
+  type AgentHooksInstallState,
+  type AgentHooksShown,
+} from "./status";
+import { useAgentSessions } from "./useAgentSessions";
 import "./AgentHooksSettingsSection.css";
 
 /**
@@ -30,6 +41,10 @@ export function AgentHooksSettingsSection({ agentStatus, clearingAgentProvider, 
   const text = t.settings.agent;
   const hooksNotice = getAgentHooksNotice(agentHooksState, shown);
   const installLabel = agentHooksInstallState === "installing" ? text.installing : agentHooksInstallState === "installed" ? text.installed : text.install;
+  // DSH and WorkBuddy install no hooks and write no agent-status.json key: their state is read from
+  // the sessions the native side lists, which is what the island counts as active sessions too.
+  const live = liveAgentStatuses(useAgentSessions(true, 5_000));
+  const busy = Object.values(live).filter((status) => status.phase === "running").length;
 
   const footer =
     agentHooksInstallState === "error" ? (
@@ -55,8 +70,13 @@ export function AgentHooksSettingsSection({ agentStatus, clearingAgentProvider, 
       }
       footer={footer}
     >
-      <SettingsRow title={text.currentStatus} control={<span className="agent-hooks-value">{getAgentStatusLabel(agentStatus, t)}</span>} />
-      {listAgentStatuses(agentStatus).map(({ key, label, status }) => {
+      <SettingsRow
+        title={text.currentStatus}
+        control={<span className="agent-hooks-value">{getAgentStatusLabel(agentStatus, t, busy)}</span>}
+      />
+      {listAgentLightStatuses(agentStatus, live).map(({ key, label, status }) => {
+        // DSH and WorkBuddy are read locally, so there is no status to clear for them.
+        const canClear = (AGENT_PROVIDERS as string[]).includes(key);
         const attention = isAgentAttentionPhase(status.phase);
         return (
           <SettingsRow
@@ -67,7 +87,7 @@ export function AgentHooksSettingsSection({ agentStatus, clearingAgentProvider, 
                 <span className={attention ? "agent-hooks-value agent-hooks-value--attention" : "agent-hooks-value"}>
                   {getAgentPhaseLabel(status.phase, t)}
                 </span>
-                {attention && (
+                {attention && canClear && (
                   <SettingsLinkButton disabled={clearingAgentProvider === key} onClick={() => onClearAgentStatus(key)}>
                     {clearingAgentProvider === key ? text.clearing : text.clearStatus}
                   </SettingsLinkButton>

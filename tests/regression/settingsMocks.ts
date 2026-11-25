@@ -43,6 +43,12 @@ mockIPC((command, payload) => {
       if (args.refreshNow) return setMockWorkbuddy({ status: "connected", usage: { remaining: 50, total: 500, updatedAt: Date.now() } }).then(() => workbuddy);
       return workbuddy;
     }
+    // One DSH session working: the Connect AI tools page reads these agents from the session list.
+    case "list_agent_sessions": return [{
+      provider: "dsh", sessionId: "dsh-mock-1", cwd: "D:\\work", title: "mock session", model: "auto/deepseek-flash",
+      effort: null, phase: "running", lastMessage: null, lastPrompt: null, replyMarker: null, replyAsks: false,
+      updatedAt: Date.now(), closed: false,
+    }];
     case "open_workbuddy_login": return null;
     case "disconnect_workbuddy": return setMockWorkbuddy({ status: "signedOut" });
     case "netease_plugin_status": return { state: "none", supported: true, tested: true, version: "3.1.41", arch: "x64", installDir: "D:\\CloudMusic", running: false, legacyInfLink: false, pluginDir: "C:\\betterncm\\plugins" };

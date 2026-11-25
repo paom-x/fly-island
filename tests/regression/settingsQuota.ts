@@ -40,8 +40,19 @@ export async function checkQuotaSettings(check: (condition: unknown, message: st
   await act(async () => source?.querySelector<HTMLInputElement>("input[role=switch]")?.click());
 
   await openPage("agentConnect");
-  check(!document.querySelector(".workbuddy-sign-in__status") && !document.querySelector(".editor-panel")?.textContent?.includes("WorkBuddy"),
-    "The Connect AI tools page has no WorkBuddy section");
+  // The rows for the locally read agents fill in after the first session list arrives.
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 100)); });
+  // DSH and WorkBuddy install no hooks, but they light the island, so this table lists them too:
+  // their state comes from the session list, and there is nothing to clear for them.
+
+  const statusRows = [...document.querySelectorAll(".settings-row")].map((row) => row.querySelector(".settings-row__title")?.textContent);
+  check(statusRows.includes("DeepSeek Harness") && statusRows.includes("WorkBuddy"),
+    `The Connect AI tools page lists the agents read without hooks (${statusRows.join()})`);
+  const dshRow = [...document.querySelectorAll(".settings-row")].find((row) => row.querySelector(".settings-row__title")?.textContent === "DeepSeek Harness");
+  check(dshRow?.textContent?.includes("正在运行") && !dshRow?.querySelector("button"),
+    `DSH shows the running session and offers no clear link (${dshRow?.textContent})`);
+  check(!document.querySelector(".workbuddy-sign-in__status"),
+    "The Connect AI tools page keeps the WorkBuddy sign-in on the AI sessions page");
 
   await openPage("agents");
   const revisited = [...document.querySelectorAll<HTMLInputElement>(".agent-quota-settings input")];

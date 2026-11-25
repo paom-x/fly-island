@@ -1,5 +1,13 @@
 import type { Translations } from "../../i18n";
-import type { AgentHooksState, AgentProvider, HookAgentProvider, AgentStatusSnapshot, AgentTaskPhase, AgentTaskStatus } from "./api";
+import type {
+  AgentHooksState,
+  AgentProvider,
+  AgentSessionSummary,
+  HookAgentProvider,
+  AgentStatusSnapshot,
+  AgentTaskPhase,
+  AgentTaskStatus,
+} from "./api";
 import type { SessionFilter } from "./sessionList";
 
 export type AgentVisualState = "idle" | "running" | "attention";
@@ -58,6 +66,57 @@ export function listAgentStatuses(snapshot: AgentStatusSnapshot): AgentStatusEnt
     })),
     ...(snapshot.others ?? []).map((other) => ({ key: other.id, label: other.name, provider: null, status: other })),
   ];
+}
+
+/**
+ * The sources the native side reads on its own, without hooks: DSH's desktop session files and
+ * the WorkBuddy browser. They still light the island, so the connection page lists them with the
+ * hooked agents — there is nothing to install for them, and their state cannot be cleared.
+ */
+const NATIVE_STATUS_PROVIDERS: AgentProvider[] = ["dsh", "workbuddy"];
+
+/**
+ * The phases of the locally read agents, taken from the sessions the native side lists: a source
+ * is working while any of its sessions is. Its hooks are not installed and it writes no
+ * agent-status.json key, so this is the only place its state can come from — and being live, it
+ * needs no way to clear it.
+ */
+export function liveAgentStatuses(sessions: readonly AgentSessionSummary[]): Partial<Record<AgentProvider, AgentTaskStatus>> {
+  const live: Partial<Record<AgentProvider, AgentTaskStatus>> = {};
+  for (const session of sessions) {
+    if (!NATIVE_STATUS_PROVIDERS.includes(session.provider)) continue;
+    const phase = session.phase === "running" ? "running" : session.phase === "waiting" ? "waiting" : null;
+    if (!phase) continue;
+    // A working session outranks one of its siblings waiting on the user.
+    if (live[session.provider]?.phase === "running") continue;
+    live[session.provider] = { phase, updatedAt: session.updatedAt };
+  }
+  return live;
+}
+
+/**
+ * The status table on the connection page: hooked agents, then the locally read ones, then any
+ * source a plugin or the local API reported. live carries the state of the agents read without
+ * hooks (see liveAgentStatuses).
+ */
+export function listAgentLightStatuses(
+  snapshot: AgentStatusSnapshot,
+  live: Partial<Record<AgentProvider, AgentTaskStatus>> = {},
+): AgentStatusEntry[] {
+  // Only the hooked agents have a key in the snapshot; the rest fall back to live and then idle.
+  const written = snapshot as Partial<Record<AgentProvider, AgentTaskStatus>>;
+  const builtIn = [...AGENT_PROVIDERS, ...NATIVE_STATUS_PROVIDERS].map(
+    (provider): AgentStatusEntry => ({
+      key: provider,
+      label: AGENT_PROVIDER_LABELS[provider],
+      provider,
+      // A snapshot from an older build can still carry an idle placeholder for these agents;
+      // the session list is the truth for them.
+      status: live[provider] ?? written[provider] ?? DEFAULT_AGENT_TASK_STATUS,
+    }),
+  );
+  const reported = listAgentStatuses(snapshot).filter((entry) => entry.provider === null);
+  return [...builtIn, ...reported];
 }
 
 /** The snapshot with the agents switched off in Settings → AI Agent shown as idle. */

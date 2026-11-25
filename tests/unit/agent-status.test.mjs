@@ -7,6 +7,7 @@ import {
   getAgentStatusLabel,
   getAgentVisualState,
   isAgentAttentionPhase,
+  listAgentLightStatuses,
   listAgentStatuses,
   withoutHiddenProviders,
 } from "../../src/features/agent-status/status.ts";
@@ -79,6 +80,19 @@ test("agents switched off in settings neither light nor name the island", () => 
     getAgentVisualState(withoutHiddenProviders(status, { claudeCode: false, codex: false, zcode: false })),
     "idle",
   );
+});
+
+test("the connection page also lists the agents read without hooks", () => {
+  // DSH and WorkBuddy have no hooks to install, but they light the island too: the status table
+  // must show them, and they must stay clearable-free (the native side refuses those keys).
+  const entries = listAgentLightStatuses(DEFAULT_AGENT_STATUS);
+  assert.deepEqual(
+    entries.map(({ key }) => key),
+    [...AGENT_PROVIDERS, "dsh", "workbuddy"],
+  );
+  const dsh = entries.find(({ key }) => key === "dsh");
+  assert.equal(dsh.label, "DeepSeek Harness");
+  assert.equal(dsh.status.phase, "idle");
 });
 
 test("a snapshot written before a provider existed lists it as idle", () => {

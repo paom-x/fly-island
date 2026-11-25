@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { isIslandMoving } from "../../lib/islandMotion";
 import { listAgentSessions, type AgentSessionSummary, type NativeAgentProvider } from "./api";
 import { sameAgentSessions, uniqueSessions } from "./sessionList";
@@ -14,7 +14,6 @@ const NONE: readonly NativeAgentProvider[] = [];
 export function useAgentSessions(enabled: boolean, intervalMs: number, windowHours?: number, native: readonly NativeAgentProvider[] = NONE) {
   const nativeKey = native.join(",");
   const [sessions, setSessions] = useState<AgentSessionSummary[]>(NO_SESSIONS);
-  const isLoading = useRef(false);
 
   useEffect(() => {
     if (!enabled) {
@@ -22,9 +21,13 @@ export function useAgentSessions(enabled: boolean, intervalMs: number, windowHou
       return;
     }
     let cancelled = false;
+    // In flight for this run of the effect only: a shared ref would stay set when the effect is
+    // torn down mid-fetch (a remount under StrictMode, or a changed window), and the next run
+    // would skip its first read and wait a whole interval with nothing on screen.
+    let inFlight = false;
     const refresh = async () => {
-      if (isLoading.current) return;
-      isLoading.current = true;
+      if (inFlight) return;
+      inFlight = true;
       try {
         const sources = nativeKey ? nativeKey.split(",") as NativeAgentProvider[] : [];
         const next = uniqueSessions(await listAgentSessions(windowHours, sources));
@@ -32,7 +35,7 @@ export function useAgentSessions(enabled: boolean, intervalMs: number, windowHou
       } catch (error) {
         console.error("Failed to list agent sessions", error);
       } finally {
-        isLoading.current = false;
+        inFlight = false;
       }
     };
     void refresh();
