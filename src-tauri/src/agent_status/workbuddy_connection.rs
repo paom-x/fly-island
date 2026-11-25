@@ -16,18 +16,18 @@ use tauri::{
     AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder, WindowEvent,
 };
 
-use tokio::{sync::Notify, time};
+use tokio::time;
 
 use super::workbuddy_auth::{
     self as auth, AuthError, CookieMetadata, FailedChecks, FailureAction, Renewal,
 };
 use super::workbuddy_cookie_vault as vault;
+use super::workbuddy_lifecycle::SCHEDULE_CHANGED;
 use super::workbuddy_usage::{self, WorkbuddyUsage, SUMMARY_URL, USAGE_PAGE};
 
 const WINDOW_LABEL: &str = "workbuddy-sign-in";
 const USAGE_CHANGED: &str = "workbuddy-usage-changed";
 const REFRESH_INTERVAL: Duration = Duration::from_secs(300);
-const STARTUP_DELAY: Duration = Duration::from_secs(30);
 const WORKBUDDY_HOST: &str = "www.workbuddy.cn";
 const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
 /// How long a silent visit to the site may take to load and let its own script renew the sign-in.
@@ -36,7 +36,6 @@ const SITE_SETTLE: Duration = Duration::from_secs(2);
 const SITE_PROBE_INTERVAL: Duration = Duration::from_millis(250);
 const SCRIPT_TIMEOUT: Duration = Duration::from_secs(3);
 static SITE_LOADED: StdMutex<Option<Sender<()>>> = StdMutex::new(None);
-static SCHEDULE_CHANGED: Notify = Notify::const_new();
 
 // Wry reports NavigationCompleted even for failed navigations. Check for the official
 // document and wait for the site's own account request before checking the billing session.
@@ -73,22 +72,22 @@ struct CachedUsage {
 }
 
 #[derive(Default)]
-struct Connection {
+pub(super) struct Connection {
     cached: Option<CachedUsage>,
-    last_state: Option<WorkbuddyState>,
+    pub(super) last_state: Option<WorkbuddyState>,
     user_agent: Option<String>,
-    signing_in: bool,
-    finish_login: bool,
+    pub(super) signing_in: bool,
+    pub(super) finish_login: bool,
     restored_startup: bool,
     tried_startup_replacement: bool,
     failures: FailedChecks,
-    retry_at: Option<Instant>,
-    renewal: Option<Renewal>,
+    pub(super) retry_at: Option<Instant>,
+    pub(super) renewal: Option<Renewal>,
     /// The cookie set last written to the Credential Manager, so an unchanged one is not rewritten.
     saved_fingerprint: Option<[u8; 32]>,
 }
 
-fn connection() -> &'static Mutex<Connection> {
+pub(super) fn connection() -> &'static Mutex<Connection> {
     static CONNECTION: OnceLock<Mutex<Connection>> = OnceLock::new();
     CONNECTION.get_or_init(|| Mutex::new(Connection::default()))
 }
@@ -100,7 +99,7 @@ fn profile_path(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|e| e.to_string())
 }
 
-fn marker_path(app: &AppHandle) -> Result<PathBuf, String> {
+pub(super) fn marker_path(app: &AppHandle) -> Result<PathBuf, String> {
     profile_path(app).map(|path| path.join("connected"))
 }
 
@@ -548,7 +547,7 @@ fn record_failure(
     }
 }
 
-async fn refresh_and_publish(
+pub(super) async fn refresh_and_publish(
     app: &AppHandle,
     connection: &mut Connection,
     force: bool,
@@ -577,7 +576,7 @@ async fn refresh_and_publish(
     state
 }
 
-fn maintenance_at(
+pub(super) fn maintenance_at(
     app: &AppHandle,
     connection: &Connection,
     startup_at: Instant,
@@ -597,31 +596,9 @@ fn maintenance_at(
     )
 }
 
+/// Starts the background refresher; the schedule itself lives in `workbuddy_lifecycle`.
 pub(crate) fn init(app: &AppHandle) {
-    let app = app.clone();
-    let startup_at = Instant::now() + STARTUP_DELAY;
-    tauri::async_runtime::spawn(async move {
-        loop {
-            let next = {
-                let mut connection = connection().lock().await;
-                if maintenance_at(&app, &connection, startup_at)
-                    .is_some_and(|at| at <= Instant::now())
-                {
-                    refresh_and_publish(&app, &mut connection, true).await;
-                }
-                maintenance_at(&app, &connection, startup_at)
-            };
-            if let Some(at) = next {
-                let _ = time::timeout(
-                    at.saturating_duration_since(Instant::now()),
-                    SCHEDULE_CHANGED.notified(),
-                )
-                .await;
-            } else {
-                SCHEDULE_CHANGED.notified().await;
-            }
-        }
-    });
+    super::workbuddy_lifecycle::init(app);
 }
 
 async fn check_login(

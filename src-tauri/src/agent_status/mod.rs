@@ -53,6 +53,7 @@ mod wezterm;
 mod window_focus;
 mod workbuddy_auth;
 pub(crate) mod workbuddy_connection;
+mod workbuddy_lifecycle;
 mod workbuddy_sessions;
 mod workbuddy_cookie_vault;
 mod workbuddy_usage;
