@@ -3,6 +3,7 @@ import { Archive } from "lucide-react";
 import { ArchivedNotice } from "./ArchivedNotice";
 import { useArchiveMotion } from "./useArchiveMotion";
 import { useTranslation } from "../../i18n";
+import { useIslandAwake } from "../../lib/islandAwake";
 import { runPluginAction } from "../plugins";
 import type { AgentArchiveMotion, AgentCardEffects, AgentHostDisplay, AgentSessionGroup, AgentSessionSort, AgentSessionView } from "../appearance/types";
 import { AgentSessionCard } from "./AgentSessionCard";
@@ -89,6 +90,8 @@ export function AgentSessionsPanel({
   const sessions = reveal ? [listed.find((session) => sessionKey(session) === reveal.key) ?? reveal.session] : listed;
   const showUsage = usageOn && !reveal;
   const [now, setNow] = useState(() => Date.now());
+  // The relative ages only matter while the panel is on screen, so their tick stops when it is not.
+  const awake = useIslandAwake();
   const effortLabels = useEffortLabels();
   const [notFoundId, setNotFoundId] = useState<string | null>(null);
   // Fade out an end of the list that has more sessions past it, rather than cutting a row in half.
@@ -110,9 +113,11 @@ export function AgentSessionsPanel({
   }, [measure, cardKey]);
 
   useEffect(() => {
+    if (!awake) return;
+    setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), AGE_REFRESH_MS);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [awake]);
 
   useEffect(() => {
     if (!notFoundId) return;

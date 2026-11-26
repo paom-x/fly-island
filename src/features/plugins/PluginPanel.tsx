@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslation } from "../../i18n";
+import { useIslandAwake } from "../../lib/islandAwake";
 import { runPluginAction } from "./api";
 import { refreshPlugins, usePlugins } from "./usePlugins";
 import "./PluginPanel.css";
 
 /** A countdown the host runs itself, so a plugin keeps its polls slow. */
 function useNow(active: boolean) {
+  const awake = useIslandAwake();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!active) return;
+    if (!active || !awake) return;
     setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [active]);
+  }, [active, awake]);
   return now;
 }
 

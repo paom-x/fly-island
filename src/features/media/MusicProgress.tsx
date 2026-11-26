@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { useTranslation } from "../../i18n";
+import { useIslandAwake } from "../../lib/islandAwake";
 import type { MediaState } from "./api";
 import { playbackPosition } from "./lyrics/lrc";
 import { isPositionJump, positionAtPointer } from "./positionAnchor";
@@ -28,6 +29,8 @@ type Props = {
  */
 export function MusicProgress({ mediaState, durationMs, onSeek }: Props) {
   const t = useTranslation();
+  // The bar only exists on the player page, so it can stop ticking while the island is collapsed.
+  const awake = useIslandAwake();
   const [now, setNow] = useState(() => Date.now());
   const [dragMs, setDragMs] = useState<number | null>(null);
   const [anchor, setAnchor] = useState({ state: mediaState, jumped: false });
@@ -49,10 +52,10 @@ export function MusicProgress({ mediaState, durationMs, onSeek }: Props) {
 
   useEffect(() => {
     setNow(Date.now());
-    if (!playing) return;
+    if (!playing || !awake) return;
     const timer = window.setInterval(() => setNow(Date.now()), TICK_MS);
     return () => window.clearInterval(timer);
-  }, [playing, mediaState.updatedAt]);
+  }, [playing, mediaState.updatedAt, awake]);
 
   if (durationMs <= 0) return null;
   const position = dragMs ?? Math.min(durationMs, playbackPosition(mediaState, now));

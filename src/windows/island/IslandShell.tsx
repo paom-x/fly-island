@@ -1,5 +1,6 @@
 import { shoulderedShapeCss } from "../../features/appearance/cornerShape";
 import { isGlass } from "../../features/appearance/settings";
+import { useEffect } from "react";
 import type { CSSProperties, ReactNode, TransitionEvent } from "react";
 import type { AgentSession } from "../../features/agent-status/session";
 import type { BatteryAlert } from "../../features/device-battery/lowBattery";
@@ -17,6 +18,7 @@ import { isPluginPage } from "./features";
 import { IslandCollapsedBar } from "./IslandCollapsedBar";
 import { IslandHeader } from "./IslandHeader";
 import type { IslandMode, IslandPage, NativeGlassState } from "./types";
+import { setIslandAwake } from "../../lib/islandAwake";
 import { useGlassPointer } from "./useGlassPointer";
 import { useIslandPreparing } from "./useIslandPreparing";
 import { useMotionLayer } from "./useMotionLayer";
@@ -171,6 +173,12 @@ export function IslandShell({
 }: IslandShellProps) {
   const t = useTranslation();
   const isExpanded = mode === "expanded";
+  // The panel pages stay mounted while the island is collapsed, so their timers would keep
+  // ticking at a UI nobody can see. Tell them when the panel shows, so they can stop and then
+  // read their state again the moment it opens.
+  useEffect(() => {
+    setIslandAwake(mode !== "collapsed");
+  }, [mode]);
   const glass = isGlass(material);
   const isLiquidGlass = material === "liquidGlass";
   const { handleGlassPointerMove, resetGlassPointer } = useGlassPointer(isLiquidGlass);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useIslandAwake } from "../../lib/islandAwake";
 import { listAgentEffortLabels } from "./api";
 import type { AgentEffortLabels } from "./effortLabels";
 import { PLUGINS_ENABLED } from "../plugins";
@@ -6,12 +7,16 @@ import { PLUGINS_ENABLED } from "../plugins";
 /** Turning a plugin on or off happens in the settings window, so the labels are read again this often. */
 const REFRESH_MS = 5000;
 
-/** The effort labels of the plugins switched on, read while the Agent page is open. */
+/**
+ * The effort labels of the plugins switched on, read while the Agent page is open. The page is in
+ * the collapsed island's hidden panel, so the reads stop until it opens again.
+ */
 export function useEffortLabels(): AgentEffortLabels {
+  const awake = useIslandAwake();
   const [labels, setLabels] = useState<AgentEffortLabels>({});
 
   useEffect(() => {
-    if (!PLUGINS_ENABLED) return;
+    if (!PLUGINS_ENABLED || !awake) return;
     let cancelled = false;
     let lastText = "";
     const refresh = () => {
@@ -31,7 +36,7 @@ export function useEffortLabels(): AgentEffortLabels {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [awake]);
 
   return labels;
 }
