@@ -12,6 +12,8 @@ import type { MediaState } from "../../features/media/api";
 import { CollapsedLyric } from "../../features/media/CollapsedLyric";
 import type { LyricsSettings } from "../../features/media/lyrics/useLyrics";
 import { CollapsedMessageContent } from "../../features/messages/CollapsedMessageContent";
+import { CollapsedSystemContent } from "../../features/system-monitor/CollapsedSystemContent";
+import type { SystemMetric, SystemStats } from "../../features/system-monitor/types";
 import { MessageSourceIcon } from "../../features/messages/MessageSourceIcon";
 import { MessageNoticeReader } from "../../features/messages/MessageNoticeReader";
 // After CollapsedMessageContent, matching the original stylesheet order.
@@ -56,6 +58,10 @@ type IslandCollapsedBarProps = {
   collapsedLayout: readonly CollapsedSlot[];
   /** The playing song's cover, or null when it is not shown. */
   collapsedCover: string | null;
+  /** The machine's counters while the text shows them, or null before the first reading. */
+  systemStats?: SystemStats | null;
+  /** The counters the user ticked, in the order they rotate; empty while the line is off. */
+  systemMetrics?: readonly SystemMetric[];
   lyricsSettings: LyricsSettings & { lyricsOffsetMs: number };
   agentSession: AgentSession | null;
   /**
@@ -101,6 +107,8 @@ export function IslandCollapsedBar({
   collapsedItem,
   collapsedLayout,
   collapsedCover,
+  systemStats = null,
+  systemMetrics = [],
   lyricsSettings,
   agentSession,
   agentSessionCount,
@@ -228,6 +236,9 @@ export function IslandCollapsedBar({
             )}
             {showCollapsedText && collapsedItem === "lyrics" && (
               <CollapsedLyric mediaState={mediaState} lyricsSettings={lyricsSettings} active={!isExpanded} />
+            )}
+            {showCollapsedText && collapsedItem === "system" && (
+              <CollapsedSystemContent stats={systemStats} metrics={systemMetrics} active={!isExpanded} prefix={showTitle ? "· " : ""} />
             )}
             {showCollapsedText && collapsedItem === "todo" && collapsedTaskTitle && (todoTimer && !todoRotation ? (
               <span className={`island__active-task island__active-task--timed${isTodoTimerEndingSoon(todoTimer) ? " island__active-task--ending" : ""}`} key={collapsedTaskTitle}>

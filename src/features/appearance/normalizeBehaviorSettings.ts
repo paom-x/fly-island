@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS } from "./settingsDefaults.ts";
 import { normalizeOrder } from "../../utils/order.ts";
 import { AUTO_COLLAPSE_SECONDS, TUCK_DELAY_SECONDS, TUCK_EDGE_HEIGHT, COLLAPSED_ITEMS, PAGE_DOTS, SHELF_CLEANUP_DAYS, oneOf } from "./settingsLimits.ts";
 import type { IslandSettings, LegacyIslandSettings } from "./types";
+import { SYSTEM_METRICS } from "../system-monitor/types.ts";
 import { normalizeCollapsedHidden, normalizeCollapsedLayout } from "./collapsedLayout.ts";
 import { TODO_ROTATION_SECONDS, TODO_SCROLL_SPEED, MESSAGE_PREVIEW_SECONDS, MESSAGE_EXPAND_MAX_WIDTH, MESSAGE_EXPAND_MAX_HEIGHT, MESSAGE_EXPAND_SECONDS, GAME_NOTICE_SECONDS } from "./settingsLimits.ts";
 
@@ -63,6 +64,7 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
     autoCopyOtp: typeof settings?.autoCopyOtp === "boolean" ? settings.autoCopyOtp : DEFAULT_SETTINGS.autoCopyOtp,
     collapsedPriority: normalizeOrder(settings?.collapsedPriority, COLLAPSED_ITEMS),
     collapsedShowCover: settings?.collapsedShowCover !== false,
+    systemMetrics: normalizeSystemMetrics(settings?.systemMetrics),
     collapsedLayout: normalizeCollapsedLayout(settings?.collapsedLayout),
     collapsedHidden: normalizeCollapsedHidden(settings?.collapsedHidden),
     pageOrder: normalizeOrder(settings?.pageOrder, PAGE_DOTS),
@@ -80,4 +82,14 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
 function wholeSeconds(value: unknown, range: { min: number; max: number }, fallback: number) {
   if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
   return Math.min(range.max, Math.max(range.min, Math.round(value)));
+}
+
+/**
+ * The counters the user ticked, in the order they rotate: unknown names and repeats dropped.
+ * Unlike an order, an unticked counter stays unticked, so nothing is filled in at the end.
+ */
+function normalizeSystemMetrics(value: unknown) {
+  const saved = Array.isArray(value) ? value : [];
+  return saved.filter((metric, index): metric is (typeof SYSTEM_METRICS)[number] =>
+    (SYSTEM_METRICS as readonly unknown[]).includes(metric) && saved.indexOf(metric) === index);
 }

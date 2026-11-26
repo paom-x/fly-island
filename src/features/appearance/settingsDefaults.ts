@@ -122,6 +122,8 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   agentTitleEnabled: true,
   collapsedPriority: [...COLLAPSED_ITEMS],
   collapsedShowCover: true,
+  // Off until the user ticks a counter: the bar keeps showing the agent, the lyric line or a todo.
+  systemMetrics: [],
   collapsedLayout: [...COLLAPSED_SLOTS],
   collapsedHidden: [],
   pageOrder: [...PAGE_DOTS],

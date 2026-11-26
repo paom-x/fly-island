@@ -7,6 +7,7 @@ import type { BatteryAlert } from "../../features/device-battery/lowBattery";
 import type { QuotaAlert } from "../../features/agent-status/quotaAlerts";
 import type { AgentVisualState } from "../../features/agent-status/status";
 import type { CollapsedItem, CollapsedSlot, IslandCornerShape, IslandShape, Material, PageButtonStyle, PageDot, TuckStyle } from "../../features/appearance/types";
+import type { SystemMetric, SystemStats } from "../../features/system-monitor/types";
 import type { MediaState } from "../../features/media/api";
 import type { MessagePreview, MessageSource } from "../../features/messages/messagePreview";
 import type { MailController } from "../../features/messages/mail/MailPanel";
@@ -69,6 +70,10 @@ type IslandShellProps = {
   collapsedLayout: readonly CollapsedSlot[];
   /** The playing song's cover for the collapsed island, or null when it is not shown. */
   collapsedCover: string | null;
+  /** The machine's counters while the collapsed text shows them, or null before the first reading. */
+  systemStats?: SystemStats | null;
+  /** The counters the user ticked in Appearance, in the order they rotate. */
+  systemMetrics?: readonly SystemMetric[];
   /** Where the collapsed island's lyric line comes from. */
   lyricsSettings: LyricsSettings & { lyricsOffsetMs: number };
   /** Order of the header's page dots, and saving a new one after a drag. */
@@ -144,6 +149,8 @@ export function IslandShell({
   collapsedItem,
   collapsedLayout,
   collapsedCover,
+  systemStats = null,
+  systemMetrics = [],
   lyricsSettings,
   pageOrder,
   pageButtonStyle,
@@ -277,6 +284,8 @@ export function IslandShell({
             collapsedItem={collapsedItem}
             collapsedLayout={collapsedLayout}
             collapsedCover={collapsedCover}
+            systemStats={systemStats}
+            systemMetrics={systemMetrics}
             lyricsSettings={lyricsSettings}
             agentSession={agentSession}
             agentSessionCount={features.agents ? activeAgentSessionCount : null}

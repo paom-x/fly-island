@@ -67,11 +67,16 @@ export type SettingsAppearanceText = {
   collapsedIsland: {
     title: string;
     priorityFooter: string;
-    items: Record<"agent" | "lyrics" | "todo", { name: string; hint: string }>;
+    items: Record<"agent" | "lyrics" | "todo" | "system", { name: string; hint: string }>;
     /** The drag handle of one item; arrow keys on it move the item too. */
     moveLabel: (name: string) => string;
     showCover: string;
     showCoverHint: string;
+    /** The machine counters the text may show, ticked one by one. */
+    metricsTitle: string;
+    metricsRow: string;
+    metricsFooter: string;
+    metrics: Record<"cpu" | "memory" | "network" | "gpu" | "temperature", string>;
     layout: {
       title: string;
       footer: string;
@@ -146,10 +151,21 @@ export const zhCN: SettingsAppearanceText = {
       agent: { name: "AI Agent 任务", hint: "正在运行的会话标题" },
       lyrics: { name: "歌词", hint: "播放时的当前一句，没有歌词时显示歌名" },
       todo: { name: "待办", hint: "开始做的待办；没开始时，剩余数量排在最后" },
+      system: { name: "机器占用", hint: "处理器、内存、网速这些读数，轮流显示" },
     },
     moveLabel: (name) => `调整"${name}"的顺序，可以拖动或按上下方向键`,
     showCover: "显示歌曲封面",
     showCoverHint: "显示歌词时，在歌词前面放这首歌的封面",
+    metricsTitle: "机器占用",
+    metricsRow: "要显示哪些读数",
+    metricsFooter: "点选要看的项目；收起的岛上每 4 秒换一个。这台电脑读不到的不会列出来，一个都不选就不显示。",
+    metrics: {
+      cpu: "处理器",
+      memory: "内存",
+      network: "网络",
+      gpu: "显卡",
+      temperature: "温度",
+    },
     layout: {
       title: "岛上的排列",
       footer: "按住图标左右拖动，放在文字左边的会显示在岛的左侧；拖进下面的盒子就不在岛上显示。灰色的是还没打开的功能，位置会保留。",
@@ -223,10 +239,21 @@ export const en: SettingsAppearanceText = {
       agent: { name: "AI Agent task", hint: "The running session's title" },
       lyrics: { name: "Lyrics", hint: "The current line while a song plays, or its title" },
       todo: { name: "Todos", hint: "The todo you started; until then, the count left comes last" },
+      system: { name: "Machine load", hint: "Processor, memory, network speed and the like, in turn" },
     },
     moveLabel: (name) => `Reorder "${name}": drag, or press the up and down arrow keys`,
     showCover: "Show the song's cover",
     showCoverHint: "The song's cover in front of the lyric line",
+    metricsTitle: "Machine load",
+    metricsRow: "Which readings to show",
+    metricsFooter: "Press the ones to watch; the collapsed island changes reading every four seconds. Readings this computer cannot take are not listed, and with none pressed the line stays off.",
+    metrics: {
+      cpu: "Processor",
+      memory: "Memory",
+      network: "Network",
+      gpu: "Graphics",
+      temperature: "Temperature",
+    },
     layout: {
       title: "On the island",
       footer: "Hold an icon and drag it left or right; icons left of the text sit on the island's left. Drop one in the box below to take it off the island. Grey ones are switched off and keep their place.",

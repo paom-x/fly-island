@@ -5,7 +5,7 @@ import { MAIL_OTP_ENABLED } from "../../src/features/releaseFlags.ts";
 
 const GROUPS: Record<string, string[]> = {
   general: ["启动与语言", "展开与收起", "位置", "贴边隐藏", "游戏模式", "内存", "备份与迁移"],
-  appearance: ["主题", "颜色", "文字", "大小", "圆角", "岛上的排列", "岛屿展示优先级", "贴边隐藏", "外观预设"],
+  appearance: ["主题", "颜色", "文字", "大小", "圆角", "岛上的排列", "岛屿展示优先级", "机器占用", "贴边隐藏", "外观预设"],
   todos: ["任务", "番茄钟", "折叠岛屿", "保存路径"],
   clipboard: ["记录内容", "显示与窗口", "快捷键", "存储位置", "文件中转"],
 };
@@ -67,6 +67,18 @@ export async function checkGroups(category: string, panel: HTMLElement, check: (
     check(titles(rowsOf(panel, "文字")).join() === "字体,字号", "Appearance: the text group holds the font and its size");
     // The island shape row joins the front of the corners group once the capsule ships (islandShape.ts).
     check(titles(rowsOf(panel, "圆角")).join() === "展开圆角,收起圆角,圆角形状,贴边圆角", "Appearance: every corner setting is in one group");
+
+    // The collapsed island's counters are one row of chips, each its own switch, saved in the
+    // order they were pressed; a counter this machine cannot read is not offered.
+    const chips = () => [...[...panel.querySelectorAll<HTMLElement>(".settings-group")].find((group) =>
+      group.querySelector(".settings-group__title")?.textContent === "机器占用")?.querySelectorAll<HTMLButtonElement>(".settings-choice__option") ?? []];
+    const off = chips().filter((button) => button.getAttribute("aria-pressed") === "false").length;
+    await act(async () => chips()[0]?.click());
+    await act(async () => chips()[1]?.click());
+    const pressed = chips().filter((button) => button.getAttribute("aria-pressed") === "true").length;
+    const saved = JSON.parse(localStorage.getItem("fly-island-settings") ?? "{}").systemMetrics as string[] | undefined;
+    check(off === chips().length && pressed === 2 && saved?.length === 2 && saved[0] !== saved[1],
+      "Appearance: the counters are chips, pressing two saves both in that order");
     check(titles(rowsOf(panel, "岛上的排列")).includes("页面按钮"), "Appearance: page buttons sit with the island's arrangement");
     const size = () => rowsOf(panel, "大小");
     check(titles(size()).join() === "收起时的大小,展开后的大小,自动宽度,高度,两侧留白", "Appearance: every size is in one group; manual width hidden while automatic");

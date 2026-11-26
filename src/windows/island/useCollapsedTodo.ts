@@ -12,6 +12,7 @@ import { useTodoRotation } from "./useIslandAutomation";
 import { alignCollapsedIslandWidth, getCollapsedIslandWidth } from "./layout";
 import { pickCollapsedItem } from "./collapsedItem";
 import { selectRotatingTodos } from "../../features/todos/todoRotation";
+import { METRIC_SAMPLE_VALUE } from "../../features/system-monitor/format.ts";
 import type { TodoRotationDisplay } from "./CollapsedTodoContent";
 
 // Stands in for the agent icon (16px plus gap) when sizing the island for a session title.
@@ -28,7 +29,8 @@ function timerPillWidth(text: string, fontScale: number) {
 
 /**
  * What the collapsed island shows: a running agent's session title (`agentTitle`), the lyric
- * line while a song plays (`lyricsPlaying`), or for todos the active (or rotating) todo title,
+ * line while a song plays (`lyricsPlaying`), a todo, or the machine's counters (the metrics ticked
+ * in Settings → Appearance → Collapsed island); for todos the active (or rotating) todo title,
  * otherwise the pending count; whichever comes first in Settings → Appearance → Collapsed island
  * of those that have something to show (`collapsedItem`); a todo only claims its rank once one is
  * started (pickCollapsedItem). Also the width that needs, with room
@@ -90,6 +92,9 @@ export function useCollapsedTodo(
     agent: agentTitle !== null,
     lyrics: lyricsPlaying,
     todo: collapsedTaskTitle !== null || collapsedTodoCount !== null,
+    // Ticked counters always have something to show: the settings page only offers the ones this
+    // machine has, and a counter that stops reading leaves its last value on the bar.
+    system: settings.systemMetrics.length > 0,
   }, activeTodoId !== null && pendingTodoIds.includes(activeTodoId));
   const baseIslandWidth = useMemo(() => {
     if (!settings.collapsedAutoWidth) return settings.collapsedWidth;
@@ -103,9 +108,15 @@ export function useCollapsedTodo(
     const todoText = rotating && rotationTodos.length
       ? rotationTodos.reduce((widest, todo) => getCollapsedIslandWidth(todo.title, 0, fontScale) > getCollapsedIslandWidth(widest, 0, fontScale) ? todo.title : widest, "")
       : collapsedTaskTitle ?? (collapsedTodoCount !== null ? t.island.pendingTodos(collapsedTodoCount) : null);
+    // One width for every ticked counter: the line rotates, so sizing to the one on screen would
+    // resize the window each time it turns over.
+    const systemText = settings.systemMetrics.reduce<string | null>((widest, metric) => {
+      const text = `${t.island.systemMetrics[metric]} ${METRIC_SAMPLE_VALUE[metric]}`;
+      return !widest || getCollapsedIslandWidth(text, 0, fontScale) > getCollapsedIslandWidth(widest, 0, fontScale) ? text : widest;
+    }, null);
     const itemText = collapsedItem === "agent"
       ? AGENT_ICON_TEXT + agentTitle
-      : collapsedItem === "lyrics" ? LYRICS_WIDTH_TEXT : collapsedItem === "todo" ? todoText : null;
+      : collapsedItem === "lyrics" ? LYRICS_WIDTH_TEXT : collapsedItem === "todo" ? todoText : systemText;
     const text = settings.showCollapsedText ? itemText ?? (settings.showTitle ? "fly-island" : "") : "";
     // The automatic widths were set with 18px each side: more side space adds to the width, less
     // keeps it and gives the text the room.
@@ -117,7 +128,8 @@ export function useCollapsedTodo(
       window.devicePixelRatio,
     );
   }, [agentTitle, collapsedItem, collapsedTaskTitle, collapsedTodoCount, coverWanted, settings.collapsedAutoWidth,
-    settings.collapsedPadding, settings.collapsedWidth, settings.islandFontPercent, settings.showCollapsedText, settings.showTitle, t, collapsedTimer, timers, rotating, rotationTodos]);
+    settings.collapsedPadding, settings.collapsedWidth, settings.islandFontPercent, settings.showCollapsedText,
+    settings.showTitle, settings.systemMetrics, t, collapsedTimer, timers, rotating, rotationTodos]);
 
   const collapsedIslandWidth = clockWeatherWidth(baseIslandWidth, clockOn, weather !== null, settings.islandFontPercent / 100, statusMinimum);
   return { collapsedTaskTitle, collapsedTodoCount, collapsedItem, collapsedIslandWidth, todoRotation, collapsedTimer };

@@ -41,6 +41,7 @@ import { useIslandHover } from "./useIslandHover";
 import { useIdleUpdateInstall } from "../../features/updater/useIdleUpdateInstall";
 import { useIslandTranslation } from "./useIslandTranslation";
 import { useMessageView } from "./useMessageView";
+import { useSystemStats } from "../../features/system-monitor/useSystemStats";
 import { useSettingsPageHeight } from "./useSettingsPageHeight";
 import { useIslandPickerOpen } from "../../lib/islandPicker";
 import { TODO_DATE_PICKER_EXPANDED_ISLAND_HEIGHT } from "./layout";
@@ -93,6 +94,10 @@ export function IslandApp() {
     );
   // The cover goes with the lyric line: when something ranked above lyrics is shown, it goes too.
   const collapsedCover = collapsedItem === "lyrics" ? cover : null;
+  // The counters are read only while the bar is showing them: a ticked counter that lost its rank
+  // to a running agent stops costing a call every couple of seconds.
+  const systemStats = useSystemStats(mode === "collapsed" && !isTucked && !hasMessagePreview
+    && collapsedItem === "system");
   const notice = useMessageNotice(preview, settings, { mode, isTucked, quiet: game.quiet, collapsedIslandWidth });
   const { agentVisualState, agentStatusLabel } = useAgentIndicator(agentStatus, settings, activeAgentSessionCount, t);
   useIslandTucking({
@@ -246,6 +251,8 @@ export function IslandApp() {
         collapsedItem={collapsedItem}
         collapsedLayout={visibleCollapsedSlots(settings.collapsedLayout, settings.collapsedHidden)}
         collapsedCover={collapsedCover}
+        systemStats={systemStats}
+        systemMetrics={settings.systemMetrics}
         lyricsSettings={settings}
         pageOrder={settings.pageOrder}
         pageButtonStyle={settings.pageButtonStyle}

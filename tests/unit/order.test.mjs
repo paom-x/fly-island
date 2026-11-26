@@ -28,14 +28,17 @@ test("crossing the target midpoint keeps unequal widths from swapping back on th
   assert.equal(crossedReorderMidpoint(168, 128, 208, false), true);
 });
 
-test("the collapsed island's order, cover and the page dots load with defaults", () => {
+test("the collapsed island's order, cover, counters and the page dots load with defaults", () => {
   const settings = normalizeSettings({});
-  assert.deepEqual(settings.collapsedPriority, ["agent", "lyrics", "todo"]);
+  assert.deepEqual(settings.collapsedPriority, ["agent", "lyrics", "todo", "system"]);
+  // No counter is ticked until the user ticks one, whatever the machine can read.
+  assert.deepEqual(settings.systemMetrics, []);
+  assert.deepEqual(normalizeSettings({ systemMetrics: ["memory", "cpu", "memory", "nope"] }).systemMetrics, ["memory", "cpu"]);
   assert.equal(settings.collapsedShowCover, true);
   assert.equal(normalizeSettings({ collapsedShowCover: false }).collapsedShowCover, false);
   assert.deepEqual(settings.pageOrder, ["todo", "music", "clipboard", "shelf", "translation"]);
   const saved = normalizeSettings({ collapsedPriority: ["todo"], collapsedShowCover: true, pageOrder: ["shelf", "todo"] });
-  assert.deepEqual(saved.collapsedPriority, ["todo", "agent", "lyrics"]);
+  assert.deepEqual(saved.collapsedPriority, ["todo", "agent", "lyrics", "system"]);
   assert.equal(saved.collapsedShowCover, true);
   // Orders saved before translation had a capsule get it at the end.
   assert.deepEqual(saved.pageOrder, ["shelf", "todo", "music", "clipboard", "translation"]);

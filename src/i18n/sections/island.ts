@@ -24,7 +24,9 @@ export type IslandText = {
   agentPage: string;
   calendar: string;
   shelfCount: (count: number) => string;
-  layoutEditor: string;
+layoutEditor: string;
+  /** Metric names on the collapsed island's system-monitor line. */
+  systemMetrics: { cpu: string; memory: string; network: string; gpu: string; temperature: string };
 };
 
 export const zhCN: IslandText = {
@@ -51,6 +53,7 @@ export const zhCN: IslandText = {
   calendar: "日历",
   shelfCount: (count) => `文件中转里有 ${count} 个文件`,
   layoutEditor: "布局编辑",
+  systemMetrics: { cpu: "CPU", memory: "内存", network: "网络", gpu: "GPU", temperature: "温度" },
 };
 
 export const en: IslandText = {
@@ -77,4 +80,5 @@ export const en: IslandText = {
   calendar: "Calendar",
   shelfCount: (count) => (count === 1 ? "1 file on the shelf" : `${count} files on the shelf`),
   layoutEditor: "Layout editor",
+  systemMetrics: { cpu: "CPU", memory: "Memory", network: "Network", gpu: "GPU", temperature: "Temp" },
 };

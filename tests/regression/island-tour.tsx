@@ -46,8 +46,7 @@ installTourPlugins();
 localStorage.setItem("fly-island-todos", JSON.stringify(empty ? [] : TOUR_TODOS));
 localStorage.setItem("fly-island-qq-notification-access-requested", "true");
 // Lyrics are looked up online unless ?lyrics=0; the mock answers for 晴天 only.
-// ?cover=1 shows the song's cover on the collapsed island; ?priority=lyrics,agent,todo reorders it,
-// ?layout=music,text,mail,shelf,agents arranges it; ?scale=0.85…1.2 sets the expanded size.
+// ?cover=1 shows the song's cover on the collapsed island; ?priority=… reorders it; ?layout=… arranges it; ?scale=… sets the expanded size.
 localStorage.setItem("fly-island-settings", JSON.stringify({
   ...(query.get("scale") ? { expandedScale: Number(query.get("scale")) } : {}),
   ...(customNotch ? { collapsedAutoWidth: false, collapsedWidth: 240, collapsedHeight: 32 } : {}),
@@ -342,12 +341,12 @@ if (query.has("shoulderSweep") || query.has("shapePerf")) {
       document.querySelectorAll(".agent-page-preview__dots svg").length === 5 && savedStyle === "icon", "七个入口切换为图标，外观预览和保存同步");
     await click('[aria-label="页面按钮"] button:first-child');
     const priority = () => [...document.querySelectorAll<HTMLElement>(".reorder-list__item")].map((item) => item.dataset.reorderId);
-    check(priority().join() === "agent,lyrics,todo", "外观页列出收起时的显示顺序：Agent 任务、歌词、待办");
+    check(priority().join() === "agent,lyrics,todo,system", "外观页列出收起时的显示顺序：Agent 任务、歌词、待办、机器占用");
     await act(async () => {
       document.querySelector<HTMLElement>(".reorder-list__handle")!.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
     });
     const savedPriority = JSON.parse(localStorage.getItem("fly-island-settings") ?? "{}").collapsedPriority as string[] | undefined;
-    check(priority().join() === "lyrics,agent,todo" && savedPriority?.join() === "lyrics,agent,todo", "按方向键调整顺序并保存");
+    check(priority().join() === "lyrics,agent,todo,system" && savedPriority?.join() === "lyrics,agent,todo,system", "按方向键调整顺序并保存");
     // Appearance → On the island: the music waveform moved left of the light and the text sits on
     // the collapsed island's left.
     const barOrder = () => [...document.querySelectorAll<HTMLElement>(".island__collapsed > *")].map((element) => element.classList[0]).join();

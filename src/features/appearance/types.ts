@@ -1,3 +1,5 @@
+import type { SystemMetric } from "../system-monitor/types";
+
 export type TranslationTarget = "window" | "island";
 
 /**
@@ -49,8 +51,8 @@ export type AgentQuotaSource = "claudeCode" | "codex" | "dsh" | "workbuddy" | "k
 export type AgentAlertStarted = "everyTurn" | "newSession" | "off";
 /** What double-clicking a file shelf entry does. */
 export type ShelfDoubleClick = "open" | "reveal";
-/** What the collapsed island can show in its text: a running agent, the lyric line, a todo. */
-export type CollapsedItem = "agent" | "lyrics" | "todo";
+/** What the collapsed island can show in its text: a running agent, the lyric line, a todo, or the machine's counters. */
+export type CollapsedItem = "agent" | "lyrics" | "todo" | "system";
 /**
  * What sits on the collapsed island, in the order the user arranged it (Appearance → Collapsed
  * island): the text (pulse, cover and the agent, lyric or todo line) and the status icons —
@@ -241,6 +243,8 @@ export type IslandSettings = {
   collapsedPriority: CollapsedItem[];
   /** The playing song's cover on the collapsed island. */
   collapsedShowCover: boolean;
+  /** Which machine counters the system-monitor line may show, in the order it rotates them; empty turns it off. */
+  systemMetrics: SystemMetric[];
   /** Where the text and each status icon sit on the collapsed island, left to right. */
   collapsedLayout: CollapsedSlot[];
   /** Slots dragged off the island in Appearance → On the island; never the text. */
