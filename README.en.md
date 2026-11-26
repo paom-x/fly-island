@@ -53,6 +53,7 @@ The iPhone's Dynamic Island gathers notifications, timers and media controls int
 ## Most of the time, it's tiny
 
 When you're not using it, it's just a small pill at the top of the screen showing the song that's playing, unread messages and how many AI agents are working.
+When you want real numbers instead, it can cycle through the processor, memory, network speed and graphics load.
 
 <p align="center"><img src="docs/assets/screenshots/collapsed.webp" alt="The collapsed island showing the current song, unread count and agent count" width="560"></p>
 
@@ -61,6 +62,7 @@ Hover over it and it expands into the views below.
 ## WeChat, QQ and mail without switching windows
 
 New messages pop up on the island: who sent it and what they said, at a glance. Long messages make the island grow so you can read them in place. Muted group chats only alert you when someone @mentions you.
+If you would rather the island not read the text at all, it can just note that something arrived.
 
 <p align="center"><img src="docs/assets/screenshots/messages.webp" alt="WeChat messages on the island" width="620"></p>
 
