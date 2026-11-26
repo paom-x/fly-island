@@ -11,6 +11,7 @@ mod media_control;
 mod media_plugins;
 mod memory_trim;
 mod webview_memory;
+mod system_monitor;
 mod legacy_migration;
 mod plugin_host;
 mod eye_care;
@@ -169,6 +170,7 @@ pub fn run() {
             ; config_transfer
             ; weather
             ; memory_trim
+            ; system_monitor
         ))
         .build(context)
         .map(|app| {
