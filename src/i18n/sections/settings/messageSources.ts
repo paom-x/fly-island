@@ -14,6 +14,10 @@ export type SettingsMessageSourcesText = {
   wechatTitle: string;
   wechatHint: string;
   autoCopyOtp: string;
+  readingTitle: string;
+  readingRow: string;
+  readingHint: string;
+  reading: Record<"unread" | "content", string>;
 };
 
 export const zhCN: SettingsMessageSourcesText = {
@@ -28,6 +32,10 @@ export const zhCN: SettingsMessageSourcesText = {
   gameNoticesHint: "全屏游戏时也在岛上显示通知，只做显示：不抢焦点，鼠标点击会穿过岛屿落到游戏里。",
   gameNoticeSeconds: "通知停留时长",
   autoCopyOtp: "自动复制验证码",
+  readingTitle: "通知内容",
+  readingRow: "读到什么程度",
+  readingHint: "「只看未读」不读发送者和内容，岛上只说收到新消息；「读取内容」显示发送者和一行正文。两者都只在内存里，不写磁盘、不进历史，岛关闭即忘。",
+  reading: { unread: "只看未读", content: "读取内容" },
   qqTitle: "QQ 通知",
   qqHint: "通过 Windows 通知读取 QQ 消息的标题和预览，只保留在本次运行的内存中。需要 QQ 已登录并开启系统通知。",
   wechatTitle: "微信提醒",
@@ -46,6 +54,10 @@ export const en: SettingsMessageSourcesText = {
   gameNoticesHint: "Shows notifications on the island during full-screen games, for display only: it never takes the focus, and clicks pass through to the game.",
   gameNoticeSeconds: "Notification duration",
   autoCopyOtp: "Auto-copy verification codes",
+  readingTitle: "Notification text",
+  readingRow: "How much to read",
+  readingHint: "\"Only unread\" reads neither the sender nor the text and the island just says something arrived; \"Read content\" shows the sender and a line of it. Either way it lives in memory only, never on disk or in a history, and closing the island forgets it.",
+  reading: { unread: "Only unread", content: "Read content" },
   qqTitle: "QQ notifications",
   qqHint: "Reads the title and preview of QQ messages from Windows notifications and keeps them in memory for this run only. QQ must be signed in with system notifications on.",
   wechatTitle: "WeChat reminders",

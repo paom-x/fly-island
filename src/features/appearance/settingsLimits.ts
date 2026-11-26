@@ -1,5 +1,5 @@
 // The ranges and choices island settings are kept within, and the fallbacks they rest on.
-import type { AgentQuotaSource, AgentSessionGroup, AgentSessionSort, CollapsedItem, CollapsedSlot, PageDot } from "./types";
+import type { AgentQuotaSource, AgentSessionGroup, AgentSessionSort, CollapsedItem, CollapsedSlot, MessageReading, PageDot } from "./types";
 
 export const AGENT_SESSION_SORTS: readonly AgentSessionSort[] = ["status", "recent", "firstSeen"];
 export const AGENT_SESSION_GROUPS: readonly AgentSessionGroup[] = ["computer", "project", "none"];
@@ -37,6 +37,8 @@ export const TUCK_DELAY_SECONDS = { min: 3, max: 600, default: 30 } as const;
 export const TODO_ROTATION_SECONDS = { min: 1, max: 60, default: 5 } as const;
 export const TODO_SCROLL_SPEED = { min: 10, max: 40, step: 5, default: 20 } as const;
 export const MESSAGE_PREVIEW_SECONDS = { min: 3, max: 30, step: 1, default: 5 } as const;
+/** How much of a notification may be read: only that one arrived, or the sender and the text. */
+export const MESSAGE_READING_MODES: readonly MessageReading[] = ["unread", "content"];
 /** Adaptive message previews (messageAutoExpand): the largest size, before scale, and how long one stays. */
 export const MESSAGE_EXPAND_MAX_WIDTH = { min: 320, max: 720, step: 20, default: 520 } as const;
 export const MESSAGE_EXPAND_MAX_HEIGHT = { min: 80, max: 360, step: 10, default: 180 } as const;

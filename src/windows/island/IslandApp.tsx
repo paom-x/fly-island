@@ -42,6 +42,7 @@ import { useIdleUpdateInstall } from "../../features/updater/useIdleUpdateInstal
 import { useIslandTranslation } from "./useIslandTranslation";
 import { useMessageView } from "./useMessageView";
 import { useSystemStats } from "../../features/system-monitor/useSystemStats";
+import { useMessageReadingSync } from "../../features/messages/useMessageReadingSync";
 import { useSettingsPageHeight } from "./useSettingsPageHeight";
 import { useIslandPickerOpen } from "../../lib/islandPicker";
 import { TODO_DATE_PICKER_EXPANDED_ISLAND_HEIGHT } from "./layout";
@@ -62,6 +63,7 @@ export function IslandApp() {
   const { mode, isTucked, page, setPage, collapseIsland, tuckIsland, revealIsland, minimizeToEdge, openIslandPage, toggleClipboardHistory } = navigation;
   const [settings, setSettings] = useIslandSettings();
   useMemoryModeSync(settings.memoryMode);
+useMessageReadingSync(settings);
   const detachedSettings = useSettingsPresentation();
   const { openSettings, changePresentation } = useSettingsNavigation(openIslandPage, setPage);
   const { settingsContentHeight, reportSettingsHeight } = useSettingsPageHeight();

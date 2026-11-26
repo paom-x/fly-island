@@ -36,6 +36,7 @@ src-tauri/src/
 ├── legacy_migration/        # 改名前安装的一次性迁移（数据目录、自启、凭据、日志名、Hook 文本），在 tauri::Builder 前运行；唯一允许出现旧产品名的 Rust 模块
 ├── messenger_activation.rs
 ├── memory_trim.rs         # 岛上只剩收起条时按内存策略清 WebView2 子进程的工作集（win32/process_memory.rs），并叫 webview_memory 判断要不要降档
+├── message_reading.rs     # 通知阅读模式：只记「收到一条」还是读发送者与正文（进程内 AtomicBool，QQ 与微信监听线程各自读取；命令 set_message_reading）
 ├── notification_diagnostics.rs
 ├── webview_memory.rs       # 面板十分钟没打开就请 WebView2 降内存档（win32/webview.rs 的 set_low_memory）
 └── win32/                   # Win32 / COM 的安全封装，crate 中唯一允许 unsafe 的地方：window（窗口查询、枚举、前台切换）、

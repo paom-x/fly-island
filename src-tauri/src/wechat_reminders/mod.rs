@@ -187,7 +187,10 @@ impl ReminderState {
         chats: Vec<ChatPreview>,
         now: u64,
     ) -> bool {
-        if !self.snapshot.enabled || !self.snapshot.preview_enabled || self.generation != generation
+        if !self.snapshot.enabled
+            || !self.snapshot.preview_enabled
+            || !crate::message_reading::reads_content()
+            || self.generation != generation
         {
             return false;
         }

@@ -10,6 +10,7 @@ mod lyrics;
 mod media_control;
 mod media_plugins;
 mod memory_trim;
+mod message_reading;
 mod webview_memory;
 mod system_monitor;
 mod legacy_migration;
@@ -170,6 +171,7 @@ pub fn run() {
             ; config_transfer
             ; weather
             ; memory_trim
+; message_reading
             ; system_monitor
         ))
         .build(context)

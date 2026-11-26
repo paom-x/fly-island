@@ -150,6 +150,7 @@ Codex 会话摘要（2026-11-15）：`list_agent_sessions` 可选返回 `lastCom
 - 测试版通道（2026-11-18）：`updater_check` 新增可选参数 `allowDowngrade`（缺省 false，与旧版相同）；为 true 时清单里任何不同的版本都算更新，用于从测试版还原到正式版。`channel` 仍为 `"stable"` / `"beta"`。主窗口与设置窗口之间的 `fly-island-update-request` 新增 action `beta`、`restore`，`fly-island-update-state` 新增字段 `target`。无新增 localStorage key。
 - 托盘（2026-11-19）：新增命令 `set_tray_language({ language })`（`"en"` 为英文，其余为中文）与 `set_tray_visible({ visible })`。托盘图标启动时先隐藏，主窗口同步 `fly-island-tray-visible` 后决定显示与否；3 秒内没有同步时兜底显示。托盘隐藏时再次启动 Fly Island 会额外打开设置。无新增应用数据文件。
 - 问题排查日志（2026-11-18）：新增命令 `get_app_log_state()`、`set_app_log_enabled({ enabled })`（都返回 `{ enabled, path, bytes }`）、`append_app_log({ entries: [{ level: "error" | "warn", message }] })`、`open_app_log_folder()`、`clear_app_log()`，事件 `app-log-changed`（payload 为是否开启）。应用数据目录新增 `app-log.json` 与 `logs/fly-island.log`、`logs/fly-island.1.log`。无新增 localStorage key。
+- 消息阅读模式（2026-11-26）：`fly-island-settings.messageReading` 取 `"unread"` / `"content"`，默认 `content`，缺失或非法值回落 `content`。原生命令 `set_message_reading({ content })` 只把模式写进 `src-tauri/src/message_reading.rs` 的进程内 `AtomicBool`（QQ 与微信两个监听线程各自读它），无返回值、不写盘；主窗口启动与设置变化时各推一次。
 - `fly-island-settings` 的 behavior 块增加 `keepVisibleWhileAgentRunning`、`keepVisibleWhileLyrics`、`keepVisibleWhileTodoRunning`（2026-11-13）：三项独立布尔值，默认 false；缺失或非 boolean 回退 false。仅暂停收起态闲置贴边计时，不新增 key、命令或事件。
 - `fly-island-settings` 新增 `topEdgeShoulders`（boolean，默认 false）和 `topEdgeShoulderSize`（整数 4–20px，默认 10）；无效或缺失回退默认，大小超界夹取，只影响贴顶的装饰外形，不增加原生点击区域。属于外观字段，恢复默认外观会一并复位。
 

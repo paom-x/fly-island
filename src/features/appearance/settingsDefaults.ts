@@ -95,6 +95,8 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   messageExpandMaxWidth: MESSAGE_EXPAND_MAX_WIDTH.default,
   messageExpandMaxHeight: MESSAGE_EXPAND_MAX_HEIGHT.default,
   messageExpandSeconds: MESSAGE_EXPAND_SECONDS.default,
+  // Reading the text is what the island always did, so it stays the default.
+  messageReading: "content",
   gameShowNotices: false,
   gameNoticeSeconds: GAME_NOTICE_SECONDS.default,
   todoTimerReminder: false,

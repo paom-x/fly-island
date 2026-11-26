@@ -63,6 +63,12 @@ export type CollapsedSlot = "pulse" | "text" | "mail" | "shelf" | "music" | "age
 /** The page dots in the expanded island's header, which the user can drag into any order. */
 export type PageDot = "todo" | "music" | "clipboard" | "shelf" | "translation";
 
+/**
+ * How much of a notification the island reads. `unread` keeps only that one arrived;
+ * `content` also takes the sender and the text, which never leaves memory.
+ */
+export type MessageReading = "unread" | "content";
+
 export type IslandSettings = {
   topEdgeLayoutVersion: 1;
   material: Material;
@@ -166,6 +172,8 @@ export type IslandSettings = {
   messageExpandMaxHeight: number;
   /** Seconds an adaptive preview stays (instead of `messagePreviewSeconds`). */
   messageExpandSeconds: number;
+  /** `content` reads the sender and text (memory only); `unread` only counts arrivals. */
+  messageReading: MessageReading;
   /** Game mode still shows message previews, for `gameNoticeSeconds`, without taking clicks. */
   gameShowNotices: boolean;
   gameNoticeSeconds: number;

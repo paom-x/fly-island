@@ -24,6 +24,8 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
     messageExpandMaxWidth: wholeSeconds(settings?.messageExpandMaxWidth, MESSAGE_EXPAND_MAX_WIDTH, MESSAGE_EXPAND_MAX_WIDTH.default),
     messageExpandMaxHeight: wholeSeconds(settings?.messageExpandMaxHeight, MESSAGE_EXPAND_MAX_HEIGHT, MESSAGE_EXPAND_MAX_HEIGHT.default),
     messageExpandSeconds: wholeSeconds(settings?.messageExpandSeconds, MESSAGE_EXPAND_SECONDS, MESSAGE_EXPAND_SECONDS.default),
+    // Anything but the two known modes falls back to reading the text.
+    messageReading: settings?.messageReading === "unread" ? "unread" : "content",
     gameShowNotices: settings?.gameShowNotices === true,
     gameNoticeSeconds: wholeSeconds(settings?.gameNoticeSeconds, GAME_NOTICE_SECONDS, GAME_NOTICE_SECONDS.default),
     memoryMode: oneOf(["saver", "balanced", "smooth"] as const, settings?.memoryMode, DEFAULT_SETTINGS.memoryMode),

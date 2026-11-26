@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { OfficeImSettingsGroup } from "./OfficeImSettingsGroup";
 import { MAIL_OTP_ENABLED } from "../../features/releaseFlags.ts";
+import { SettingsChoice } from "../../components/settings/SettingsChoice";
 import { SettingsGroup } from "../../components/settings/SettingsGroup";
 import { SettingsLinkButton } from "../../components/settings/SettingsLinkButton";
 import { SettingsRow } from "../../components/settings/SettingsRow";
 import { SettingsToggleRow } from "../../components/settings/SettingsToggleRow";
 import { SettingsSliderRow } from "../../components/settings/SettingsSliderRow";
-import { MESSAGE_EXPAND_MAX_HEIGHT, MESSAGE_EXPAND_MAX_WIDTH, MESSAGE_EXPAND_SECONDS, MESSAGE_PREVIEW_SECONDS } from "../../features/appearance/settingsLimits";
-import type { IslandSettings } from "../../features/appearance/types";
+import { MESSAGE_EXPAND_MAX_HEIGHT, MESSAGE_EXPAND_MAX_WIDTH, MESSAGE_EXPAND_SECONDS, MESSAGE_PREVIEW_SECONDS, MESSAGE_READING_MODES } from "../../features/appearance/settingsLimits";
+import type { IslandSettings, MessageReading } from "../../features/appearance/types";
 import { MailAccountList } from "../../features/messages/mail/MailAccountList";
 import { MailConnectForm } from "../../features/messages/mail/MailConnectForm";
 import { MAX_MAIL_ACCOUNTS } from "../../features/messages/mail/mailAccounts";
@@ -49,6 +50,24 @@ export function MessagesSettingsPage({
           defaultValue={MESSAGE_PREVIEW_SECONDS.default} resetLabel={t.settings.layout.resetToDefault}
           onChange={(messagePreviewSeconds) => onSettingsChange({ ...settings, messagePreviewSeconds })} />
         <NoticeRows settings={settings} onSettingsChange={onSettingsChange} />
+      </SettingsGroup>
+      {/*
+        One row, two modes: reading the text is what the island always did, and "only
+        unread" is for people who would rather the words never entered the process.
+        Placed above QQ and WeChat because it governs both of them.
+      */}
+      <SettingsGroup title={labels.readingTitle} footer={labels.readingHint}>
+        <SettingsRow
+          title={labels.readingRow}
+          control={
+            <SettingsChoice<MessageReading>
+              value={settings.messageReading}
+              options={MESSAGE_READING_MODES.map((mode) => ({ value: mode, label: labels.reading[mode] }))}
+              ariaLabel={labels.readingRow}
+              onChange={(messageReading) => onSettingsChange({ ...settings, messageReading })}
+            />
+          }
+        />
       </SettingsGroup>
       <QQGroup controller={qqNotifications} title={labels.qqTitle} hint={labels.qqHint} />
       <SettingsGroup title={labels.wechatTitle} footer={<Problem error={actionError || wechat.error} hint={wechatHint} />}>
