@@ -3,8 +3,8 @@ use super::launcher::{
     activate_existing_qq, existing_qq_windows, preferred_qq_window, qq_executable, QQWindow,
 };
 use super::listener::{
-    read_notifications, registration_error, should_repair_registration, wait_between_reads,
-    POLL_FALLBACK, SAFETY_POLL,
+    arrival_only, read_notifications, registration_error, should_repair_registration,
+    wait_between_reads, POLL_FALLBACK, SAFETY_POLL,
 };
 use super::*;
 use crate::messenger_activation::is_interactive_window;
@@ -209,6 +209,18 @@ fn restored_qq_has_a_taskbar_button() {
             "QQ must have an application button on the primary taskbar"
         );
     }
+}
+
+#[test]
+fn a_notification_read_as_arrival_only_keeps_no_text() {
+    // 133_000_000_000_000_000 ticks is 13_300_000_000_000 ms since 1601; subtracting the
+    // epoch offset leaves a Unix time the island can sort the arrival by.
+    let arrival = arrival_only(7, 133_000_000_000_000_000);
+
+    assert_eq!(arrival.id, "QQ:7:133000000000000000");
+    assert!(arrival.title.is_empty());
+    assert!(arrival.body.is_empty());
+    assert_eq!(arrival.created_at, 1_655_526_400_000);
 }
 
 #[test]

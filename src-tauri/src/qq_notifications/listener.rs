@@ -369,6 +369,17 @@ fn read_from(
     Ok((NotificationStatus::Listening, items))
 }
 
+/// The record for a notification whose text was not read: it says only that one arrived,
+/// with the same id and time the full record would have carried.
+pub(super) fn arrival_only(id: u32, ticks: i64) -> QQNotification {
+    QQNotification {
+        id: format!("QQ:{id}:{ticks}"),
+        title: String::new(),
+        body: String::new(),
+        created_at: ticks / 10_000 - 11_644_473_600_000,
+    }
+}
+
 fn read_qq_notification(
     notification: &UserNotification,
 ) -> windows::core::Result<Option<QQNotification>> {
@@ -381,12 +392,7 @@ fn read_qq_notification(
     // else. The text elements are never fetched, so the words stay in Windows'
     // notification store instead of passing through this process at all.
     if !crate::message_reading::reads_content() {
-        return Ok(Some(QQNotification {
-            id: format!("QQ:{id}:{ticks}"),
-            title: String::new(),
-            body: String::new(),
-            created_at: ticks / 10_000 - 11_644_473_600_000,
-        }));
+        return Ok(Some(arrival_only(id, ticks)));
     }
     let mut parts = Vec::new();
     if let Ok(elements) = notification
