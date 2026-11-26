@@ -18,6 +18,14 @@ const COLLAPSED_HIT_SLOP: f64 = 4.0;
 // here, because the window stops receiving the cursor as soon as it leaves the shape.
 pub(crate) const ISLAND_HOVER_CHANGED_EVENT: &str = "island-hover-changed";
 
+/// How often the cursor is looked at while the pointer is on the island (roughly 83 Hz).
+const ON_ISLAND_POLL: Duration = Duration::from_millis(12);
+
+/// How often it is looked at while the pointer is somewhere else on the screen. This loop is the
+/// island's only wake-up path for "the pointer came back", but the bar is one strip at the top of
+/// the screen: watching for it at full rate from across the desktop is work nobody sees.
+const ELSEWHERE_POLL: Duration = Duration::from_millis(50);
+
 pub(crate) fn start_cursor_passthrough_loop(window: WebviewWindow) {
     thread::spawn(move || {
         let mut ignoring_cursor = false;
@@ -28,18 +36,21 @@ pub(crate) fn start_cursor_passthrough_loop(window: WebviewWindow) {
         let hwnd = window.hwnd().ok();
 
         loop {
+            // One look at the cursor per turn: asking twice (once for the activity clock, once
+            // for the hit test) doubled every syscall in a loop that runs dozens of times a
+            // second.
+            let on_island = hwnd.is_none_or(cursor_is_inside_island);
             // A parked browser has to be awake before the pointer can reach the island, so the
             // wake-up rides on this loop instead of waiting for the webview to say something.
-            // Only while the pointer is actually on the island: the loop runs at 83 Hz and
-            // would otherwise reset the "left alone" clock forever.
-            if hwnd.is_none_or(cursor_is_inside_island) {
+            // Only while the pointer is actually on the island: otherwise the loop would reset
+            // the "left alone" clock forever.
+            if on_island {
                 crate::webview_memory::note_activity(window.app_handle());
             }
             // A press that started on the island (selecting text, dragging a slider or a
             // scrollbar) keeps the window taking the mouse until it is released: passing clicks
             // through mid-drag ended the gesture and dropped the selection being made.
-            let is_inside = hwnd.is_none_or(cursor_is_inside_island)
-                || (!ignoring_cursor && win32::input::is_left_button_down());
+            let is_inside = on_island || (!ignoring_cursor && win32::input::is_left_button_down());
             let should_ignore = !is_inside;
 
             if should_ignore != ignoring_cursor
@@ -58,7 +69,10 @@ pub(crate) fn start_cursor_passthrough_loop(window: WebviewWindow) {
                 }
             }
 
-            thread::sleep(Duration::from_millis(12));
+            // Near the island every millisecond counts: hover, press and drag all land here.
+            // With the pointer anywhere else, one look every 50 ms is five times less work and
+            // still quick enough that the bar is clickable on the way to it.
+            thread::sleep(if is_inside { ON_ISLAND_POLL } else { ELSEWHERE_POLL });
         }
     });
 }
