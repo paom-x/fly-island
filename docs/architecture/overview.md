@@ -45,6 +45,8 @@ Z Code 的 Coding Plan 额度由 `agent_status/zcode_usage.rs` 查询，优先�
 
 微信的进程解析、窗口归属和主窗口选择统一在 `wechat_reminders/source.rs`，供打开动作、提醒监听、摘要读取和探测程序复用；需比较完整路径时使用 `win32/process.rs` 的 canonicalize 与归一化回退。微信摘要开启时，微信提醒服务通过 `win32/caption_close.rs` 将微信关闭按钮的点击转为最小化，通过 `win32/taskbar.rs` 控制最小化窗口的任务栏按钮。
 
+岛收起静止时还有一次防烧屏的小位移：`island/oled.rs` 每 180 秒把窗口沿屏幕顶边挪 1~2 像素（0 → 1 → 2 → 1 循环，逻辑像素按显示器缩放换算），到点重算一次几何位置。只沿顶边挪、不往下挪——往下会让贴齐顶边时的造型露出一道缝；展开与拖动期间都不挪，贴边收起时照样挪——那一条贴在屏幕边上的像素才是长时间亮着的。开关是通用页「位置」组的「OLED 防烧屏」（设置键 `oledShift`，默认开）。
+
 ## 目标结构
 
 前端和 Rust 的目标目录树，以及各目录的职责，分别见 [src/AGENTS.md](../../src/AGENTS.md#目标结构) 和 [src-tauri/AGENTS.md](../../src-tauri/AGENTS.md#目标结构)。本文只记录迁移映射。

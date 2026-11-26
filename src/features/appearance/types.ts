@@ -92,6 +92,12 @@ export type IslandSettings = {
   marginY: number;
   /** Prevent moving the island by dragging; explicit position reset still works. */
   positionLocked: boolean;
+  /**
+   * Steps the collapsed island a pixel or two along the top edge every few minutes, so no
+   * column of pixels stays lit at one brightness (OLED burn-in; src-tauri/src/island/oled.rs).
+   * On unless turned off.
+   */
+  oledShift: boolean;
   islandMonitor: IslandMonitor;
   /** Bottom corner radius (px) of the expanded island; its detached and inner panel radii follow it. */
   islandCornerRadius: number;

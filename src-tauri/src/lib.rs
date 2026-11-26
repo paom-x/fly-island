@@ -130,6 +130,7 @@ pub fn run() {
                     eprintln!("failed to keep the island window out of Alt+Tab");
                 }
                 island::start_monitor_follow_loop(window.clone());
+                island::start_oled_shift_loop(app.handle().clone());
                 island::start_cursor_passthrough_loop(window);
             }
             system::fullscreen::start(app.handle());

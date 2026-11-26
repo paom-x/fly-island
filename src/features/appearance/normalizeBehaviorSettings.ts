@@ -13,6 +13,8 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
   const autoTuck = typeof settings?.autoTuck === "boolean" ? settings.autoTuck : DEFAULT_SETTINGS.autoTuck;
   return {
     positionLocked: settings?.positionLocked === true,
+    // Older saves have no such switch; they keep the burn-in guard on.
+    oledShift: settings?.oledShift !== false,
     rotateTodos: settings?.rotateTodos === true,
     showIdleTodoCount: settings?.showIdleTodoCount !== false,
     todoRotationSeconds: wholeSeconds(settings?.todoRotationSeconds, TODO_ROTATION_SECONDS, TODO_ROTATION_SECONDS.default),

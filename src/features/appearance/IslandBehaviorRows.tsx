@@ -124,6 +124,12 @@ export function PositionRows({ settings, onSettingsChange, onResetPosition }: Ro
         checked={settings.positionLocked}
         onChange={(positionLocked) => onSettingsChange({ ...settings, positionLocked })}
       />
+      <SettingsToggleRow
+        title={position.oledShift}
+        description={position.oledShiftHint}
+        checked={settings.oledShift}
+        onChange={(oledShift) => onSettingsChange({ ...settings, oledShift })}
+      />
     </>
   );
 }

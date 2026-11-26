@@ -50,6 +50,8 @@ export type IslandInteraction = {
   /** Px of the island the "edge" tuck leaves on screen (island/geometry.rs). */
   tuckEdgeHeight: number;
   positionLocked: boolean;
+  /** Steps the collapsed island along the top edge for OLED burn-in (island/oled.rs). */
+  oledShift?: boolean;
   animatePosition: boolean;
   glassEnabled: boolean;
   glassIntensity: number;

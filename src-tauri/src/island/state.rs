@@ -169,6 +169,9 @@ pub(crate) struct IslandWindowState {
     pub(super) notice_size: Option<(f64, f64)>,
     /// Game mode shows a preview without taking clicks: the cursor passes through the island.
     pub(super) click_through: bool,
+    /// Steps the island a pixel or two along the top edge every few minutes, so no column of
+    /// pixels stays lit at one brightness (OLED burn-in; island/oled.rs).
+    pub(super) oled_shift: bool,
 }
 
 /// A grown message preview's size kept inside the stage window at `scale`, never below the
@@ -270,6 +273,9 @@ impl Default for IslandWindowState {
             followed_monitor: None,
             notice_size: None,
             click_through: false,
+            // On by default: protection nobody switches on protects nothing, and a two-pixel
+            // walk along the top edge is not meant to be noticed.
+            oled_shift: true,
         }
     }
 }

@@ -46,7 +46,7 @@ export async function checkGroups(category: string, panel: HTMLElement, check: (
     const tuck = rowsOf(panel, "贴边隐藏");
     check(titles(tuck).join() === "闲置时贴边隐藏,收起后贴边,Agent 运行时不贴边,显示歌词时不贴边,待办计时时不贴边"
       && tuck.slice(1).every((row) => row.classList.contains("settings-row--indent")), "General: auto-tuck with its delay and when not to tuck, all indented under it");
-    check(titles(rowsOf(panel, "位置")).join() === "回到默认位置,锁定小岛位置", "General: the position rows come last");
+    check(titles(rowsOf(panel, "位置")).join() === "回到默认位置,锁定小岛位置,OLED 防烧屏", "General: the position rows come last");
     const memory = rowsOf(panel, "内存");
     const choices = () => [...(memory[0]?.querySelectorAll<HTMLButtonElement>("[role='group'][aria-label='内存策略'] button") ?? [])];
     check(titles(memory).join() === "内存策略" && choices().map((button) => button.textContent).join() === "省内存,平衡,顺滑"

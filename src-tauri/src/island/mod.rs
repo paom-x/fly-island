@@ -1,11 +1,13 @@
 //! Main island window: Tauri commands, window access, and the submodules for state,
-//! stage geometry, liquid glass, cursor passthrough and top-edge attachment.
+//! stage geometry, liquid glass, cursor passthrough, top-edge attachment and the
+//! burn-in stepping of the collapsed island.
 
 pub(crate) mod glass_capture;
 pub(crate) mod focus;
 mod follow;
 mod geometry;
 mod glass;
+mod oled;
 pub(crate) mod outside_click;
 pub(crate) mod passthrough;
 mod state;
@@ -35,6 +37,7 @@ use state::{mutate_window_state, read_window_state, window_state, CornerShape, I
 
 pub(crate) use geometry::{apply_stage_geometry, start_taskbar_tracking};
 pub(crate) use follow::start_monitor_follow_loop;
+pub(crate) use oled::start_oled_shift_loop;
 pub(crate) use passthrough::start_cursor_passthrough_loop;
 pub(crate) use state::{record_dragged_position, IslandPosition, IslandWindowState};
 
@@ -87,6 +90,7 @@ pub fn set_island_interaction(
     corner_shape: Option<String>,
     monitor_follow: Option<String>,
     position_locked: Option<bool>,
+    oled_shift: Option<bool>,
     notice_width: Option<f64>,
     notice_height: Option<f64>,
     click_through: Option<bool>,
@@ -122,6 +126,9 @@ pub fn set_island_interaction(
             state.tuck_edge_height = height.clamp(MIN_TUCKED_EDGE_HEIGHT, MAX_TUCKED_EDGE_HEIGHT);
         }
         state.position_locked = position_locked.unwrap_or(false);
+        if let Some(oled_shift) = oled_shift {
+            state.oled_shift = oled_shift;
+        }
         state.collapsed_scale = collapsed_scale;
         state.collapsed_height = collapsed_height;
         state.expanded_scale = expanded_scale.clamp(0.75, 1.4);
@@ -167,6 +174,10 @@ pub fn set_island_interaction(
         state.click_through = click_through.unwrap_or(false);
         *state
     });
+    // The switch starts its cycle over instead of resuming halfway out.
+    if oled_shift.is_some_and(|enabled| enabled != previous_state.oled_shift) {
+        oled::reset();
+    }
     if previous_state.custom_position.is_some() && state.custom_position != previous_state.custom_position {
         if let Some(position) = state.custom_position {
             let _ = window.emit("island-position-changed", position);

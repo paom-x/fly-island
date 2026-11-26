@@ -138,6 +138,8 @@ pub(crate) fn apply_stage_geometry(
         positioned_state.custom_position = None;
     }
     let (x, y) = resolve_stage_position(positioned_state, centered_x, normal_y, tucked_y);
+    // Burn-in protection moves the island along the top edge and nowhere else (island/oled.rs).
+    let (x, y) = super::oled::shifted(x, y, positioned_state, scale);
     super::top_edge::sync_from_stage(window, positioned_state, monitor_position.y + top_inset);
     // At the very top the island overlaps app bars such as docks, which may have raised
     // themselves into the topmost band after it; take the front again. Not over a full-screen
