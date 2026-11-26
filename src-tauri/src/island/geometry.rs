@@ -11,7 +11,7 @@ use std::{
 };
 use tauri::{LogicalSize, Monitor, PhysicalPosition, Position, Size, WebviewWindow};
 
-use super::state::{read_window_state, DockEdge, IslandPosition, IslandWindowState, MonitorFollow, TuckStyle};
+use super::state::{read_window_state, IslandPosition, IslandWindowState, MonitorFollow, TuckStyle};
 use crate::win32::{self, taskbar_edge::TaskbarRect};
 
 pub(super) const STAGE_WINDOW_WIDTH: f64 = 820.0;
@@ -103,15 +103,8 @@ pub(crate) fn apply_stage_geometry(
     // Keep room for the closing animation at every supported panel scale.
     let stage_height = STAGE_WINDOW_HEIGHT
         .max((state.expanded_height * state.expanded_scale).ceil() + STAGE_WINDOW_PADDING_Y);
-    // A side-docked island keeps the same stage, turned a quarter turn: the length runs along the
-    // edge and the panel's height becomes the window's width (island/state.rs DockEdge).
-    let (stage_width, stage_window_height) = if state.dock_edge.is_side() {
-        (stage_height, STAGE_WINDOW_WIDTH)
-    } else {
-        (STAGE_WINDOW_WIDTH, stage_height)
-    };
 
-    resize_stage(window, LogicalSize::new(stage_width, stage_window_height))?;
+    resize_stage(window, LogicalSize::new(STAGE_WINDOW_WIDTH, stage_height))?;
 
     let current_monitor = window
         .current_monitor()
@@ -136,26 +129,18 @@ pub(crate) fn apply_stage_geometry(
     let scale = monitor.scale_factor();
     let monitor_position = monitor.position();
     let monitor_size = monitor.size();
-    let physical_width = (stage_width * scale).round() as i32;
-    let physical_height = (stage_window_height * scale).round() as i32;
+    let physical_width = (STAGE_WINDOW_WIDTH * scale).round() as i32;
     let top_inset = monitor_top_inset(&monitor);
     let centered_x = monitor_position.x + (monitor_size.width as i32 - physical_width) / 2;
-    // A side-docked stage is as tall as the island's length, and centred down the edge.
-    let centered_y = monitor_position.y + (monitor_size.height as i32 - physical_height) / 2;
     let (normal_y, tucked_y) = stage_top_positions(state, monitor_position.y, top_inset, scale);
-    let (normal_x, tucked_x) = stage_side_positions(state, &monitor, physical_width, scale);
     let mut positioned_state = state;
     if !has_custom_monitor {
         positioned_state.custom_position = None;
     }
-    let (x, y) = if state.dock_edge.is_side() {
-        resolve_docked_position(positioned_state, centered_y, normal_x, tucked_x)
-    } else {
-        resolve_stage_position(positioned_state, centered_x, normal_y, tucked_y)
-    };
-    // Burn-in protection steps the island along its edge and nowhere else (island/oled.rs).
+    let (x, y) = resolve_stage_position(positioned_state, centered_x, normal_y, tucked_y);
+    // Burn-in protection moves the island along the top edge and nowhere else (island/oled.rs).
     let (x, y) = super::oled::shifted(x, y, positioned_state, scale);
-    super::top_edge::sync_from_stage(window, positioned_state, edge_anchor(&monitor, top_inset));
+    super::top_edge::sync_from_stage(window, positioned_state, monitor_position.y + top_inset);
     // At the very top the island overlaps app bars such as docks, which may have raised
     // themselves into the topmost band after it; take the front again. Not over a full-screen
     // game (game mode tucking the island resizes it): reordering the topmost band there is
@@ -273,17 +258,8 @@ pub(super) fn monitor_for_island_position(
 
     Ok(monitors.into_iter().find(|monitor| {
         let scale = monitor.scale_factor();
-        let (island_center_x, island_center_y) = if state.dock_edge.is_side() {
-            (
-                position.x as f64 + state.collapsed_height * state.collapsed_scale * scale / 2.0,
-                position.y as f64 + STAGE_WINDOW_WIDTH * scale / 2.0,
-            )
-        } else {
-            (
-                position.x as f64 + STAGE_WINDOW_WIDTH * scale / 2.0,
-                position.y as f64 + state.collapsed_height * state.collapsed_scale * scale / 2.0,
-            )
-        };
+        let island_center_x = position.x as f64 + STAGE_WINDOW_WIDTH * scale / 2.0;
+        let island_center_y = position.y as f64 + state.collapsed_height * state.collapsed_scale * scale / 2.0;
         let monitor_position = monitor.position();
         let monitor_size = monitor.size();
 
@@ -419,65 +395,6 @@ pub(super) fn anchor_top_inset(monitor_top: i32, taskbar_bottom: Option<i32>) ->
 pub(super) fn stage_top_positions(state: IslandWindowState, monitor_top: i32, top_inset: i32, dpi: f64) -> (i32, i32) {
     let top = monitor_top + top_inset;
     (top + (state.margin_y * dpi).round() as i32, top + tucked_top_offset(state, dpi))
-}
-
-/// Where the stage sits across the edge it is docked to: flush with it at rest, and pushed in
-/// while tucked so the strip the tuck leaves visible stays on screen.
-pub(super) fn stage_side_positions(
-    state: IslandWindowState,
-    monitor: &Monitor,
-    physical_width: i32,
-    dpi: f64,
-) -> (i32, i32) {
-    let left = monitor.position().x;
-    let right = left + monitor.size().width as i32 - physical_width;
-    let hide = tucked_side_offset(state, dpi);
-    // Tucking slides the stage out through the edge it is docked to, so the strip the tuck leaves
-    // visible stays flush with that edge: left by hide on the left, right by hide on the right.
-    if state.dock_edge == DockEdge::Right {
-        (right, right + hide)
-    } else {
-        (left, left - hide)
-    }
-}
-
-/// How far the stage slides inward while tucked: the bar's thickness minus the strip left on
-/// screen. The Line style morphs into that strip in place, so it does not move.
-pub(super) fn tucked_side_offset(state: IslandWindowState, dpi: f64) -> i32 {
-    if state.tuck_style == TuckStyle::Line {
-        return 0;
-    }
-    let thickness = state.collapsed_height * state.collapsed_scale;
-    let visible = state.tuck_style.hot_zone_size()
-        .map_or(state.tuck_edge_height, |(_, height)| height * state.collapsed_scale);
-    ((thickness - visible).max(0.0) * dpi).round() as i32
-}
-
-/// The physical coordinate of the edge the island is docked to, on the axis that crosses it: y for
-/// the top edge, x for the left and right ones.
-pub(super) fn edge_anchor(monitor: &Monitor, top_inset: i32) -> i32 {
-    match read_window_state().dock_edge {
-        DockEdge::Left => monitor.position().x,
-        DockEdge::Right => monitor.position().x + monitor.size().width as i32,
-        DockEdge::Top => monitor.position().y + top_inset,
-    }
-}
-
-/// Resolves a side-docked stage: the axis across the edge takes the tucked coordinate, while the
-/// axis along it keeps a dragged position or the monitor centre.
-pub(super) fn resolve_docked_position(
-    state: IslandWindowState,
-    along_normal: i32,
-    across_normal: i32,
-    across_tucked: i32,
-) -> (i32, i32) {
-    let along = state.custom_position.map_or(along_normal, |position| position.y);
-    let across = if state.is_tucked {
-        across_tucked
-    } else {
-        state.custom_position.map_or(across_normal, |position| position.x)
-    };
-    (across, along)
 }
 
 pub(super) fn resolve_stage_position(

@@ -118,7 +118,7 @@ if (!automated) {
       // General: v3.2.6 adds Ctrl + wheel and game mode's "still show notifications"; appearance +1 open and collapsed corners plus the top-edge curves; clipboard +1 storage folder.
       // 2026-11-19: the tucked look (+1) moves from general (16 -> 15) to appearance (22 -> 23); 2026-11-26: memory policy (+1) lands in general.
       // Appearance 23 -> 24: the counters take one row of chips, not one switch per counter.
-      const maxRows = category === "agents" ? 13 : category === "general" ? 21 : category === "appearance" ? 25 : category === "clipboard" ? 10 : category === "todos" ? 9 : category === "messages" ? 9 : 8;
+      const maxRows = category === "agents" ? 13 : category === "general" ? 20 : category === "appearance" ? 25 : category === "clipboard" ? 10 : category === "todos" ? 9 : category === "messages" ? 9 : 8;
       if (category === "clipboard") check([...panel.querySelectorAll("label")].some((label) =>
         label.textContent === "悬停时预览完整内容" && label.control?.matches('[role="switch"]:not(:checked)')),
       "Clipboard hover preview defaults off in settings");

@@ -47,8 +47,6 @@ Z Code 的 Coding Plan 额度由 `agent_status/zcode_usage.rs` 查询，优先�
 
 岛收起静止时还有一次防烧屏的小位移：`island/oled.rs` 每 180 秒把窗口沿屏幕顶边挪 1~2 像素（0 → 1 → 2 → 1 循环，逻辑像素按显示器缩放换算），到点重算一次几何位置。只沿顶边挪、不往下挪——往下会让贴齐顶边时的造型露出一道缝；展开与拖动期间都不挪，贴边收起时照样挪——那一条贴在屏幕边上的像素才是长时间亮着的。开关是通用页「位置」组的「OLED 防烧屏」（设置键 `oledShift`，默认开）。
 
-岛也可以停在屏幕的左边或右边。舞台不是挪坐标，而是整整转四分之一圈：侧边时窗口宽高互换（宽=面板高度、高=820），前端 `.stage--dock-left` / `.stage--dock-right` 用 `transform: rotate(∓90deg)` 把内容转回来，岛的顶边永远朝着它贴着的那条屏幕边。Rust 侧的 `IslandWindowState::dock_edge`（`island/state.rs` 的 `DockEdge`）决定走哪条路径：`geometry.rs` 用 `stage_side_positions` / `tucked_side_offset` / `resolve_docked_position` 沿 x 轴贴边、`edge_anchor` 给出贴边那条线的坐标，`top_edge.rs` 的 `sync_from_stage` 改按边判贴合（侧边比 `custom_position.x`）；光标命中测试先把窗口坐标反旋回舞台坐标（`passthrough.rs` 的 `stage_coordinates` → `point_in_window`），所以侧边时热区、展开区与点击穿透都和顶边一样工作；缩放比例也不能再按窗口宽度算——舞台那 820 像素在顶边时横在窗口上、在侧边时竖在窗口里，`stage_scale` 因此按它们落在的那条窗口边取值。拖动过一次位置后再换边，自定义位置作废（换边那一刻清空），防烧屏位移也跟着改成沿竖边上下走。
-
 ## 目标结构
 
 前端和 Rust 的目标目录树，以及各目录的职责，分别见 [src/AGENTS.md](../../src/AGENTS.md#目标结构) 和 [src-tauri/AGENTS.md](../../src-tauri/AGENTS.md#目标结构)。本文只记录迁移映射。

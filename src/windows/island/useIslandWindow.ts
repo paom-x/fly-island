@@ -72,7 +72,6 @@ export function useIslandWindow({
           tuckEdgeHeight: nextSettings.tuckEdgeHeight,
           positionLocked: nextSettings.positionLocked,
           oledShift: nextSettings.oledShift,
-    dockEdge: nextSettings.dockEdge,
           animatePosition: true,
           glassEnabled: isGlass(nextSettings.material),
           glassIntensity: nextSettings.glassIntensity,

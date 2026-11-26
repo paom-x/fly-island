@@ -45,29 +45,6 @@
   background: transparent;
 }
 
-/*
- * A side-docked island. The native window is the same stage standing on its end (island/geometry.rs
- * sizes it that way), so the stage keeps its own proportions and is turned inside the window: the
- * island's top edge then meets the left or right screen edge. `100vh` is the stage's width and
- * `100vw` its height, which is what the turn maps back into the window.
- */
-.stage--dock-left,
-.stage--dock-right {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  width: 100vh;
-  height: 100vw;
-}
-
-.stage--dock-left {
-  transform: translate(-50%, -50%) rotate(-90deg);
-}
-
-.stage--dock-right {
-  transform: translate(-50%, -50%) rotate(90deg);
-}
-
 .island--todo .icon-button {
   color: var(--text-2);
   background: var(--color-white-a09);

@@ -34,7 +34,6 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   positionLocked: false,
   // On unless turned off: protection nobody switches on protects nothing.
   oledShift: true,
-  dockEdge: "top",
   islandMonitor: "primary",
   islandCornerRadius: DEFAULT_ISLAND_CORNER_RADIUS,
   collapsedCornerRadius: COLLAPSED_CORNER_RADIUS.default,

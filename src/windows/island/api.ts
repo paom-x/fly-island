@@ -52,8 +52,6 @@ export type IslandInteraction = {
   positionLocked: boolean;
   /** Steps the collapsed island along the top edge for OLED burn-in (island/oled.rs). */
   oledShift?: boolean;
-  /** Which screen edge the stage is docked to; the window turns a quarter turn on the sides. */
-  dockEdge?: "top" | "left" | "right";
   animatePosition: boolean;
   glassEnabled: boolean;
   glassIntensity: number;

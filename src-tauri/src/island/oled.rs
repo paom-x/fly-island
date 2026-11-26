@@ -61,16 +61,12 @@ pub(super) fn shifted(x: i32, y: i32, state: IslandWindowState, scale: f64) -> (
     if !should_shift(state) {
         return (x, y);
     }
-    let step = physical_offset(offset(), scale);
-    if step == 0 {
-        return (x, y);
+    let dx = physical_offset(offset(), scale);
+    if dx == 0 {
+        (x, y)
+    } else {
+        (x + dx, y)
     }
-    // The step runs along whichever edge the island is docked to: across the screen at the top,
-    // up and down the side when it hangs off the left or right edge.
-    if state.dock_edge.is_side() {
-        return (x, y + step);
-    }
-    (x + step, y)
 }
 
 /// Steps the island every [`SHIFT_INTERVAL`] while it stands collapsed and the setting is on.

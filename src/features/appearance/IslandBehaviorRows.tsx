@@ -5,8 +5,8 @@ import { SettingsRow } from "../../components/settings/SettingsRow";
 import { SettingsNumberRow } from "../../components/settings/SettingsNumberRow";
 import { SettingsSliderRow } from "../../components/settings/SettingsSliderRow";
 import { SettingsToggleRow } from "../../components/settings/SettingsToggleRow";
-import { AUTO_COLLAPSE_SECONDS, DOCK_EDGES, GAME_NOTICE_SECONDS, TUCK_DELAY_SECONDS } from "./settingsLimits";
-import type { DockEdge, ExpandTrigger, IslandSettings } from "./types";
+import { AUTO_COLLAPSE_SECONDS, GAME_NOTICE_SECONDS, TUCK_DELAY_SECONDS } from "./settingsLimits";
+import type { ExpandTrigger, IslandSettings } from "./types";
 
 type RowsProps = {
   settings: IslandSettings;
@@ -117,21 +117,6 @@ export function PositionRows({ settings, onSettingsChange, onResetPosition }: Ro
       <SettingsRow
         title={position.resetRow}
         control={<SettingsLinkButton onClick={onResetPosition}>{position.reset}</SettingsLinkButton>}
-      />
-      <SettingsRow
-        title={position.dockEdge}
-        description={position.dockEdgeHint}
-        control={
-          <SettingsChoice<DockEdge>
-            value={settings.dockEdge}
-            options={DOCK_EDGES.map((edge) => ({
-              value: edge,
-              label: { top: position.dockEdgeTop, left: position.dockEdgeLeft, right: position.dockEdgeRight }[edge],
-            }))}
-            ariaLabel={position.dockEdge}
-            onChange={(dockEdge) => onSettingsChange({ ...settings, dockEdge })}
-          />
-        }
       />
       <SettingsToggleRow
         title={position.lock}
