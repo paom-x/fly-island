@@ -4,9 +4,10 @@
 
 use std::{thread, time::Duration};
 use tauri::{Emitter, WebviewWindow};
+use windows::Win32::Foundation::POINT;
 
 use super::{
-    geometry::{apply_stage_geometry, monitor_at},
+    geometry::apply_stage_geometry,
     state::{mutate_window_state, read_window_state, IslandMode, IslandWindowState, MonitorFollow},
 };
 use crate::win32;
@@ -76,18 +77,28 @@ pub(super) fn may_move(state: IslandWindowState) -> bool {
     matches!(state.mode, IslandMode::Collapsed) && !state.is_dragging
 }
 
-fn monitor_bounds(window: &WebviewWindow, point: (i32, i32)) -> Option<(i32, i32, i32, i32)> {
-    let monitor = monitor_at(window, point).ok().flatten()?;
-    let (position, size) = (monitor.position(), monitor.size());
-    Some((position.x, position.y, size.width as i32, size.height as i32))
+/// The monitor rectangle holding `point`, asked of Windows directly.
+///
+/// `window.available_monitors()` (the obvious way) is a round trip to the runtime's main thread,
+/// and this loop asks for one twice every [`POLL_INTERVAL`]: at 300 ms that cost about 3% of a
+/// core on an idle machine, all of it inside the event loop the island needs for its own work.
+fn monitor_bounds(_window: &WebviewWindow, point: (i32, i32)) -> Option<(i32, i32, i32, i32)> {
+    let rect = win32::window::monitor_rect_at(POINT {
+        x: point.0,
+        y: point.1,
+    })?;
+    Some((rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top))
 }
 
 /// The monitor the island's window sits on now, by the middle of the window: a tucked island's
 /// top edge is above its monitor, but the stage below it is not.
 fn island_bounds(window: &WebviewWindow) -> Option<(i32, i32, i32, i32)> {
-    let position = window.outer_position().ok()?;
-    let size = window.outer_size().ok()?;
-    monitor_bounds(window, (position.x + size.width as i32 / 2, position.y + size.height as i32 / 2))
+    let island = window.hwnd().ok()?;
+    let rect = win32::window::window_rect(island)?;
+    monitor_bounds(
+        window,
+        ((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2),
+    )
 }
 
 fn move_to(window: &WebviewWindow, point: (i32, i32)) {
