@@ -1279,7 +1279,7 @@ dependencies = [
 
 [[package]]
 name = "fly-island"
-version = "3.3.3"
+version = "3.3.4"
 dependencies = [
  "arboard",
  "base64 0.22.1",
