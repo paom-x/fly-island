@@ -40,7 +40,11 @@ const SETTING_RECHECK_WHILE_BROKEN: Duration = Duration::from_secs(5);
 /// How long the listener may sit still before it re-reads the list on its own. Reads are woken by
 /// the system's own change event, so this only catches the cases where no event ever arrives (a
 /// listener that was never granted access, a channel that was lost).
-const SAFETY_POLL: Duration = Duration::from_secs(30);
+pub(super) const SAFETY_POLL: Duration = Duration::from_secs(30);
+
+/// The read interval when no change event could be subscribed: a notification has to show up within
+/// a second, so the store is read once a second, as the listener did before the event existed.
+pub(super) const POLL_FALLBACK: Duration = Duration::from_secs(1);
 
 /// One live notification listener, kept open for the life of the monitor thread.
 ///
@@ -51,9 +55,13 @@ const SAFETY_POLL: Duration = Duration::from_secs(30);
 /// happened.
 struct Channel {
     listener: UserNotificationListener,
-    token: i64,
-    /// Held so the handler the listener registered stays alive for as long as the registration.
-    _handler: TypedEventHandler<UserNotificationListener, UserNotificationChangedEventArgs>,
+    /// The change-event subscription, when the system granted one. An unpackaged app is refused
+    /// here (`ERROR_NOT_FOUND`, 0x80070490) even though the listener itself opens fine, so the
+    /// token and its handler live in an `Option` and the monitor polls when they are absent.
+    subscription: Option<(
+        i64,
+        TypedEventHandler<UserNotificationListener, UserNotificationChangedEventArgs>,
+    )>,
 }
 
 impl Channel {
@@ -67,12 +75,24 @@ impl Channel {
             let _ = sink.try_send(());
             Ok(())
         });
-        let token = listener.NotificationChanged(&handler)?;
+        // Losing the subscription is not losing the listener: without it the monitor reads on a
+        // short poll instead, which is exactly what it did before the event existed.
+        let subscription = match listener.NotificationChanged(&handler) {
+            Ok(token) => Some((token, handler)),
+            Err(error) => {
+                eprintln!("QQ 通知变化事件订阅失败，改为每秒读取：{error}");
+                None
+            }
+        };
         Ok(Self {
             listener,
-            token,
-            _handler: handler,
+            subscription,
         })
+    }
+
+    /// Whether Windows pushes changes to the monitor, or it has to look for them itself.
+    fn wakes_on_events(&self) -> bool {
+        self.subscription.is_some()
     }
 
     fn read(&self) -> Result<(NotificationStatus, Vec<QQNotification>), String> {
@@ -82,7 +102,9 @@ impl Channel {
 
 impl Drop for Channel {
     fn drop(&mut self) {
-        let _ = self.listener.RemoveNotificationChanged(self.token);
+        if let Some((token, _)) = &self.subscription {
+            let _ = self.listener.RemoveNotificationChanged(*token);
+        }
     }
 }
 
@@ -178,10 +200,19 @@ pub(super) fn monitor(service: Arc<NotificationService>, receiver: mpsc::Receive
         }
         // Windows' own change event (or a settings change from the window) wakes this at once;
         // the timeout is only the fallback for a listener that never reports anything.
-        if receiver.recv_timeout(SAFETY_POLL) == Err(mpsc::RecvTimeoutError::Disconnected) {
+        let wait = wait_between_reads(channel.as_ref().is_some_and(Channel::wakes_on_events));
+        if receiver.recv_timeout(wait) == Err(mpsc::RecvTimeoutError::Disconnected) {
             return;
         }
     }
+}
+
+/// How long the monitor may sit still before it reads the store on its own.
+///
+/// With a change event it is only the safety net; without one — an unpackaged app is refused the
+/// subscription on this Windows — it *is* the read interval, one second, as it was before.
+pub(super) fn wait_between_reads(wakes_on_events: bool) -> Duration {
+    if wakes_on_events { SAFETY_POLL } else { POLL_FALLBACK }
 }
 
 /// What is wrong with QQ's notification channel, repairing its registration once per generation.
@@ -346,6 +377,17 @@ fn read_qq_notification(
     }
     let id = notification.Id()?;
     let ticks = notification.CreationTime()?.UniversalTime;
+    // Settings -> Messages -> "only unread": keep that a message arrived and nothing
+    // else. The text elements are never fetched, so the words stay in Windows'
+    // notification store instead of passing through this process at all.
+    if !crate::message_reading::reads_content() {
+        return Ok(Some(QQNotification {
+            id: format!("QQ:{id}:{ticks}"),
+            title: String::new(),
+            body: String::new(),
+            created_at: ticks / 10_000 - 11_644_473_600_000,
+        }));
+    }
     let mut parts = Vec::new();
     if let Ok(elements) = notification
         .Notification()?

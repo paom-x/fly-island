@@ -2,7 +2,10 @@ use super::history::{NotificationBuffer, MAX_ITEMS};
 use super::launcher::{
     activate_existing_qq, existing_qq_windows, preferred_qq_window, qq_executable, QQWindow,
 };
-use super::listener::{read_notifications, registration_error, should_repair_registration};
+use super::listener::{
+    read_notifications, registration_error, should_repair_registration, wait_between_reads,
+    POLL_FALLBACK, SAFETY_POLL,
+};
 use super::*;
 use crate::messenger_activation::is_interactive_window;
 use std::{thread, time::Duration};
@@ -206,6 +209,15 @@ fn restored_qq_has_a_taskbar_button() {
             "QQ must have an application button on the primary taskbar"
         );
     }
+}
+
+#[test]
+fn a_listener_without_the_change_event_is_read_once_a_second() {
+    // An unpackaged app is refused the subscription (ERROR_NOT_FOUND), and a listener that fell
+    // back to polling must still see a notification within a second.
+    assert_eq!(wait_between_reads(false), POLL_FALLBACK);
+    assert_eq!(wait_between_reads(true), SAFETY_POLL);
+    assert_eq!(POLL_FALLBACK, std::time::Duration::from_secs(1));
 }
 
 #[test]
