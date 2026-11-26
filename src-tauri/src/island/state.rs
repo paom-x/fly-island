@@ -61,6 +61,33 @@ pub(crate) enum MonitorFollow {
     Foreground,
 }
 
+/// The screen edge the island is docked to. `Top` is the original placement: a wide stage, the
+/// island at its top, and tucking slides it up. `Left` and `Right` turn the stage a quarter turn so
+/// the window stands tall and the island meets that side; tucking then slides it sideways.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) enum DockEdge {
+    #[default]
+    Top,
+    Left,
+    Right,
+}
+
+impl DockEdge {
+    /// Missing or unknown IPC values keep the original top edge.
+    pub(super) fn from_value(value: Option<&str>) -> Self {
+        match value {
+            Some("left") => Self::Left,
+            Some("right") => Self::Right,
+            _ => Self::Top,
+        }
+    }
+
+    /// Whether the stage stands on its side (left and right edges).
+    pub(super) fn is_side(self) -> bool {
+        !matches!(self, Self::Top)
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) enum TuckStyle {
     #[default]
@@ -172,6 +199,8 @@ pub(crate) struct IslandWindowState {
     /// Steps the island a pixel or two along the top edge every few minutes, so no column of
     /// pixels stays lit at one brightness (OLED burn-in; island/oled.rs).
     pub(super) oled_shift: bool,
+    /// Which edge the island is docked to (Settings -> General -> Position -> dock edge).
+    pub(super) dock_edge: DockEdge,
 }
 
 /// A grown message preview's size kept inside the stage window at `scale`, never below the
@@ -276,6 +305,7 @@ impl Default for IslandWindowState {
             // On by default: protection nobody switches on protects nothing, and a two-pixel
             // walk along the top edge is not meant to be noticed.
             oled_shift: true,
+            dock_edge: DockEdge::Top,
         }
     }
 }

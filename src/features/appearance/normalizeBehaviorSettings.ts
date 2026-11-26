@@ -15,6 +15,8 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
     positionLocked: settings?.positionLocked === true,
     // Older saves have no such switch; they keep the burn-in guard on.
     oledShift: settings?.oledShift !== false,
+  // Only the three offered edges count; anything else keeps the island at the top.
+  dockEdge: settings?.dockEdge === "left" || settings?.dockEdge === "right" ? settings.dockEdge : "top",
     rotateTodos: settings?.rotateTodos === true,
     showIdleTodoCount: settings?.showIdleTodoCount !== false,
     todoRotationSeconds: wholeSeconds(settings?.todoRotationSeconds, TODO_ROTATION_SECONDS, TODO_ROTATION_SECONDS.default),

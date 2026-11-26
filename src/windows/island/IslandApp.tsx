@@ -63,7 +63,7 @@ export function IslandApp() {
   const { mode, isTucked, page, setPage, collapseIsland, tuckIsland, revealIsland, minimizeToEdge, openIslandPage, toggleClipboardHistory } = navigation;
   const [settings, setSettings] = useIslandSettings();
   useMemoryModeSync(settings.memoryMode);
-useMessageReadingSync(settings);
+  useMessageReadingSync(settings);
   const detachedSettings = useSettingsPresentation();
   const { openSettings, changePresentation } = useSettingsNavigation(openIslandPage, setPage);
   const { settingsContentHeight, reportSettingsHeight } = useSettingsPageHeight();
@@ -224,7 +224,7 @@ useMessageReadingSync(settings);
   );
 
   return (
-    <main className={`stage stage--font-${settings.fontFamily}`} data-tone={colors.tone} style={stageStyle}>
+    <main className={`stage stage--font-${settings.fontFamily} stage--dock-${settings.dockEdge}`} data-tone={colors.tone} style={stageStyle}>
       <IslandShell
         qqMail={qqMail}
         qqNotifications={qqNotifications}

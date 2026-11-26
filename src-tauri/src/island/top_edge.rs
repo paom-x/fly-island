@@ -16,37 +16,58 @@ pub(crate) fn is_attached() -> bool {
 }
 
 /// Recomputes the attachment once the stage geometry has resolved the window position.
-/// `top` is the physical y of the monitor top, below a top-docked Windows taskbar.
-pub(crate) fn sync_from_stage(window: &WebviewWindow, state: IslandWindowState, top: i32) {
-    set_attached(
-        window,
-        is_top_attached(state.custom_position, state.margin_y, top),
-    );
+/// `anchor` is the physical coordinate of the docked edge on the axis that crosses it: y for the
+/// top edge (below a top-docked Windows taskbar), x for the left and right ones.
+pub(crate) fn sync_from_stage(window: &WebviewWindow, state: IslandWindowState, anchor: i32) {
+    let attached = if state.dock_edge.is_side() {
+        is_side_attached(state.custom_position, anchor)
+    } else {
+        is_top_attached(state.custom_position, state.margin_y, anchor)
+    };
+    set_attached(window, attached);
 }
 
-/// Pulls a dropped island flush with the top edge when it lands close to it.
+/// Pulls a dropped island flush with the edge it is docked to when it lands close to it.
 pub(crate) fn snap_to_top(window: &WebviewWindow, position: IslandPosition) -> IslandPosition {
     let Ok(Some(monitor)) = monitor_for_island_position(window, position, read_window_state()) else {
         set_attached(window, false);
         return position;
     };
-    let top = monitor.position().y + monitor_top_inset(&monitor);
+    let state = read_window_state();
     let snap_distance = (SNAP_DISTANCE * monitor.scale_factor()).round() as i32;
-    let snapped = IslandPosition {
-        x: position.x,
-        y: snapped_y(position.y, top, snap_distance),
+    // A side-docked island comes flush with the left or right edge instead of the top one.
+    let snapped = if state.dock_edge.is_side() {
+        let edge = if state.dock_edge == super::state::DockEdge::Right {
+            monitor.position().x + monitor.size().width as i32
+                - window.inner_size().map_or(0, |size| size.width as i32)
+        } else {
+            monitor.position().x
+        };
+        IslandPosition {
+            x: snapped_y(position.x, edge, snap_distance),
+            y: position.y,
+        }
+    } else {
+        let top = monitor.position().y + monitor_top_inset(&monitor);
+        IslandPosition {
+            x: position.x,
+            y: snapped_y(position.y, top, snap_distance),
+        }
     };
 
     if snapped != position {
         let target = Position::Physical(PhysicalPosition::new(snapped.x, snapped.y));
         if let Err(error) = window.set_position(target) {
-            eprintln!("Failed to snap island to the top edge: {error}");
-            set_attached(window, position.y == top);
+            eprintln!("Failed to snap island to its docked edge: {error}");
             return position;
         }
     }
 
-    set_attached(window, snapped.y == top);
+    sync_from_stage(
+        window,
+        state,
+        super::geometry::edge_anchor(&monitor, monitor_top_inset(&monitor)),
+    );
     snapped
 }
 
@@ -61,6 +82,11 @@ pub(crate) fn set_attached(window: &WebviewWindow, attached: bool) {
     if changed {
         let _ = window.emit(TOP_ATTACHMENT_CHANGED_EVENT, attached);
     }
+}
+
+// A side-docked island has no margin along the crossing axis: only a dragged x can leave the edge.
+fn is_side_attached(custom_position: Option<IslandPosition>, edge: i32) -> bool {
+    custom_position.is_none_or(|position| position.x == edge)
 }
 
 // A custom position ignores the vertical margin, so only its own y decides.

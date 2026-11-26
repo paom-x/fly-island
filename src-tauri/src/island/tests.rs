@@ -2,7 +2,7 @@ use tauri::PhysicalPosition;
 
 use super::geometry::*;
 use super::glass::parse_hex_color;
-use super::passthrough::{point_in_island, point_in_notch};
+use super::passthrough::{point_in_island, point_in_notch, point_in_window, stage_scale};
 use super::state::*;
 
 fn state(mode: IslandMode, scale: f64, expanded_height: f64) -> IslandWindowState {
@@ -523,4 +523,78 @@ fn collapsed_bar_takes_clicks_in_its_corners_and_just_beside_it() {
         assert!(!point_in_island(island, dpi, right + 6.0 * dpi, bottom / 2.0));
         assert!(!point_in_island(island, dpi, left + width * dpi / 2.0, bottom + 1.0));
     }
+}
+
+#[test]
+fn only_the_three_offered_edges_are_taken() {
+    assert_eq!(DockEdge::from_value(None), DockEdge::Top);
+    assert_eq!(DockEdge::from_value(Some("top")), DockEdge::Top);
+    assert_eq!(DockEdge::from_value(Some("left")), DockEdge::Left);
+    assert_eq!(DockEdge::from_value(Some("right")), DockEdge::Right);
+    // An unknown value from an older or newer front end keeps the top edge, never a guess.
+    assert_eq!(DockEdge::from_value(Some("bottom")), DockEdge::Top);
+    assert!(!DockEdge::Top.is_side());
+    assert!(DockEdge::Left.is_side() && DockEdge::Right.is_side());
+}
+
+#[test]
+fn a_side_tuck_leaves_the_same_strip_as_the_top_one() {
+    let hidden = IslandWindowState { dock_edge: DockEdge::Left, ..IslandWindowState::default() };
+    let thickness = hidden.collapsed_height * hidden.collapsed_scale;
+    let strip = hidden.tuck_edge_height;
+    assert_eq!(
+        tucked_side_offset(hidden, 1.0),
+        (thickness - strip).round() as i32,
+    );
+    // The Line style morphs into the strip in place, so nothing moves sideways.
+    let line = IslandWindowState {
+        dock_edge: DockEdge::Left,
+        tuck_style: TuckStyle::Line,
+        ..IslandWindowState::default()
+    };
+    assert_eq!(tucked_side_offset(line, 1.0), 0);
+}
+
+#[test]
+fn a_docked_stage_puts_the_edge_across_and_the_length_along() {
+    let dragged = IslandPosition { x: 300, y: 640 };
+    let resting = IslandWindowState { dock_edge: DockEdge::Left, ..IslandWindowState::default() };
+    // At rest on the left edge the stage sits flush with x = 300; the island keeps its centre down
+    // the edge.
+    assert_eq!(resolve_docked_position(resting, 700, 300, 320), (300, 700));
+    let dragged_state = IslandWindowState { custom_position: Some(dragged), ..resting };
+    assert_eq!(resolve_docked_position(dragged_state, 700, 300, 320), (300, 640));
+    // Tucked in, the crossing axis follows the tuck and the length stays where it was dragged to.
+    let tucked = IslandWindowState { is_tucked: true, ..dragged_state };
+    assert_eq!(resolve_docked_position(tucked, 700, 300, 320), (320, 640));
+}
+
+#[test]
+fn a_turned_stage_takes_its_scale_from_the_side_it_lies_on() {
+    // A 820x460 stage at 100%, so one stage pixel is one physical pixel either way round.
+    let top = IslandWindowState::default();
+    assert_eq!(stage_scale(top, 820.0, 460.0), 1.0);
+    // Turned to the left, the same 820 pixels run down a 820 tall window.
+    let left = IslandWindowState { dock_edge: DockEdge::Left, ..IslandWindowState::default() };
+    assert_eq!(stage_scale(left, 460.0, 820.0), 1.0);
+    // At 125% the stage is 1025 by 575 physical pixels, whichever way it is turned.
+    assert_eq!(stage_scale(top, 1025.0, 575.0), 1.25);
+    assert_eq!(stage_scale(left, 575.0, 1025.0), 1.25);
+}
+
+#[test]
+fn the_cursor_is_turned_back_into_stage_coordinates() {
+    let scale = 1.0;
+    let window_width = 460.0;
+    // A 820x460 stage turned to the left edge: the window's top-left corner is the island's far end.
+    let left = IslandWindowState { dock_edge: DockEdge::Left, ..IslandWindowState::default() };
+    // The island's top centre in stage coordinates is (410, 0); at the left edge that is the window's
+    // left edge, halfway down.
+    assert!(point_in_window(left, scale, window_width, 0.0, 410.0));
+    // The old top-edge reading of the same window coordinates would miss the island entirely.
+    assert!(!point_in_island(left, scale, 0.0, 410.0));
+    // Turned to the right edge, the island's top centre sits halfway down the window's right side.
+    let right = IslandWindowState { dock_edge: DockEdge::Right, ..IslandWindowState::default() };
+    assert!(point_in_window(right, scale, window_width, window_width - 1.0, 410.0));
+    assert!(!point_in_window(right, scale, window_width, window_width - 1.0, 40.0));
 }

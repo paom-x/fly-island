@@ -91,6 +91,7 @@ pub fn set_island_interaction(
     monitor_follow: Option<String>,
     position_locked: Option<bool>,
     oled_shift: Option<bool>,
+    dock_edge: Option<String>,
     notice_width: Option<f64>,
     notice_height: Option<f64>,
     click_through: Option<bool>,
@@ -103,6 +104,12 @@ pub fn set_island_interaction(
         crate::webview_memory::note_activity(&app);
     }
     let previous_state = read_window_state();
+    // Only the three edges the settings offer count; anything else keeps the current edge.
+    let next_dock_edge = dock_edge.as_deref().and_then(|value| match value {
+        "top" | "left" | "right" => Some(state::DockEdge::from_value(Some(value))),
+        _ => None,
+    });
+    let dock_changed = next_dock_edge.is_some_and(|edge| edge != previous_state.dock_edge);
     let collapsed_scale = collapsed_scale.clamp(0.75, 1.4);
     let collapsed_height = collapsed_height.filter(|height| height.is_finite())
         .map(|height| height.clamp(MIN_COLLAPSED_ISLAND_HEIGHT, MAX_COLLAPSED_ISLAND_HEIGHT))
@@ -150,6 +157,13 @@ pub fn set_island_interaction(
         } else if state.custom_position.is_none() {
             state.custom_position = restored_custom_position;
         }
+        if let Some(edge) = next_dock_edge {
+            state.dock_edge = edge;
+        }
+        if dock_changed {
+            // A position dragged along one edge means nothing on another: start from the centre.
+            state.custom_position = None;
+        }
         state.glass_enabled = glass_enabled.unwrap_or(false);
         if let Some(glass_intensity) = glass_intensity {
             state.glass_intensity = glass_intensity.clamp(25.0, 100.0);
@@ -175,7 +189,7 @@ pub fn set_island_interaction(
         *state
     });
     // The switch starts its cycle over instead of resuming halfway out.
-    if oled_shift.is_some_and(|enabled| enabled != previous_state.oled_shift) {
+    if oled_shift.is_some_and(|enabled| enabled != previous_state.oled_shift) || dock_changed {
         oled::reset();
     }
     if previous_state.custom_position.is_some() && state.custom_position != previous_state.custom_position {

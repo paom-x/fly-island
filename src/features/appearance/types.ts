@@ -69,6 +69,13 @@ export type PageDot = "todo" | "music" | "clipboard" | "shelf" | "translation";
  */
 export type MessageReading = "unread" | "content";
 
+/**
+ * Which screen edge the island is docked to. `top` is the original placement; `left` and `right`
+ * turn the native stage a quarter turn so the island hangs off that edge instead
+ * (src-tauri/src/island/state.rs DockEdge).
+ */
+export type DockEdge = "top" | "left" | "right";
+
 export type IslandSettings = {
   topEdgeLayoutVersion: 1;
   material: Material;
@@ -98,6 +105,7 @@ export type IslandSettings = {
    * On unless turned off.
    */
   oledShift: boolean;
+  dockEdge: DockEdge;
   islandMonitor: IslandMonitor;
   /** Bottom corner radius (px) of the expanded island; its detached and inner panel radii follow it. */
   islandCornerRadius: number;

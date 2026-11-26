@@ -6,7 +6,7 @@ use windows::Win32::Foundation::HWND;
 
 use super::{
     geometry::{tucked_top_offset, STAGE_WINDOW_WIDTH},
-    state::{game_quiet, read_window_state, CornerShape, IslandMode, IslandWindowState},
+    state::{game_quiet, read_window_state, CornerShape, DockEdge, IslandMode, IslandWindowState},
 };
 use crate::win32;
 
@@ -86,17 +86,59 @@ pub(super) fn cursor_is_inside_island(hwnd: HWND) -> bool {
     };
 
     let window_width = (window_rect.right - window_rect.left).max(1) as f64;
-    let physical_scale = window_width / STAGE_WINDOW_WIDTH;
+    let window_height = (window_rect.bottom - window_rect.top).max(1) as f64;
     let local_x = (cursor.x - window_rect.left) as f64;
     let local_y = (cursor.y - window_rect.top) as f64;
     let state = read_window_state();
+    let physical_scale = stage_scale(state, window_width, window_height);
     // Tucked over a game: the edge strip lets everything through, so the cursor reaching the
     // top of the screen never brings the island out or activates it (#73).
     if state.is_tucked && game_quiet() {
         return false;
     }
 
-    point_in_island(state, physical_scale, local_x, local_y)
+    point_in_window(state, physical_scale, window_width, local_x, local_y)
+}
+
+/// How many physical pixels one stage pixel became. The stage is 820 wide and turns with the
+/// edge it is docked to: at the top those 820 pixels run across the window, on the sides they run
+/// down it, so the scale has to be read from the window side they ended up on.
+pub(super) fn stage_scale(state: IslandWindowState, window_width: f64, window_height: f64) -> f64 {
+    if state.dock_edge.is_side() {
+        window_height / STAGE_WINDOW_WIDTH
+    } else {
+        window_width / STAGE_WINDOW_WIDTH
+    }
+}
+
+/// The hit test in window coordinates. A side-docked island is drawn turned a quarter turn, so the
+/// cursor is turned back first and the stage test then reads the same for every edge.
+pub(super) fn point_in_window(
+    state: IslandWindowState,
+    physical_scale: f64,
+    window_width: f64,
+    local_x: f64,
+    local_y: f64,
+) -> bool {
+    let (x, y) = stage_coordinates(state, physical_scale, window_width, local_x, local_y);
+    point_in_island(state, physical_scale, x, y)
+}
+
+/// Turns window coordinates back into stage coordinates for a side-docked stage: the island's top
+/// edge meets the left or right screen edge, and the stage's length runs down the window.
+fn stage_coordinates(
+    state: IslandWindowState,
+    physical_scale: f64,
+    window_width: f64,
+    local_x: f64,
+    local_y: f64,
+) -> (f64, f64) {
+    let length = STAGE_WINDOW_WIDTH * physical_scale;
+    match state.dock_edge {
+        DockEdge::Left => (length - local_y, local_x),
+        DockEdge::Right => (local_y, window_width - local_x),
+        DockEdge::Top => (local_x, local_y),
+    }
 }
 
 /// Physical stage coordinates, shared by the live cursor loop and the DPI tests.
