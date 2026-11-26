@@ -81,6 +81,8 @@ export function normalizeBehaviorSettings(settings: LegacyIslandSettings | null 
       ? settings.keepVisibleWhileLyrics : DEFAULT_SETTINGS.keepVisibleWhileLyrics,
     keepVisibleWhileTodoRunning: typeof settings?.keepVisibleWhileTodoRunning === "boolean"
       ? settings.keepVisibleWhileTodoRunning : DEFAULT_SETTINGS.keepVisibleWhileTodoRunning,
+    keepVisibleWhileMetrics: typeof settings?.keepVisibleWhileMetrics === "boolean"
+      ? settings.keepVisibleWhileMetrics : DEFAULT_SETTINGS.keepVisibleWhileMetrics,
   } satisfies Partial<IslandSettings>;
 }
 

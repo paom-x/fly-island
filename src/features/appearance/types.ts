@@ -222,6 +222,7 @@ export type IslandSettings = {
   keepVisibleWhileAgentRunning: boolean;
   keepVisibleWhileLyrics: boolean;
   keepVisibleWhileTodoRunning: boolean;
+  keepVisibleWhileMetrics: boolean;
   /**
    * Module switches. Off hides the module on the island and stops its background work;
    * its data is kept. QQ, WeChat and clipboard history use their existing switches.

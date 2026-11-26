@@ -8,7 +8,12 @@ const activity = { agentVisualState: "idle", collapsedItem: "todo", songPlaying:
 const stays = (patch, state) => keepIslandVisible({ ...DEFAULT_SETTINGS, ...patch }, { ...activity, ...state }, 1000);
 
 test("keep-visible switches default off and normalize only booleans independently", () => {
-  for (const field of ["keepVisibleWhileAgentRunning", "keepVisibleWhileLyrics", "keepVisibleWhileTodoRunning"]) {
+  for (const field of [
+    "keepVisibleWhileAgentRunning",
+    "keepVisibleWhileLyrics",
+    "keepVisibleWhileTodoRunning",
+    "keepVisibleWhileMetrics",
+  ]) {
     assert.equal(DEFAULT_SETTINGS[field], false);
     for (const value of [undefined, "true", 1, null, false]) assert.equal(normalizeSettings({ [field]: value })[field], false);
     assert.equal(normalizeSettings({ [field]: true })[field], true);
@@ -40,6 +45,15 @@ test("unstarted todos do not hold; Start and a running countdown do", () => {
   assert.equal(stays(settings, { timer: { endsAt: 2000 } }), true);
   assert.equal(stays(settings, { timer: { endsAt: 1000 } }), false);
   assert.equal(stays({ ...settings, todoEnabled: false }, { activeTodoId: "a" }), false);
+});
+
+test("the machine counters hold the island while the bar shows them", () => {
+  const settings = { keepVisibleWhileMetrics: true };
+  assert.equal(stays(settings, { collapsedItem: "system" }), true);
+  assert.equal(stays({ ...settings, showCollapsedText: false }, { collapsedItem: "system" }), false);
+  for (const item of ["agent", "lyrics", "todo", null]) {
+    assert.equal(stays(settings, { collapsedItem: item }), false);
+  }
 });
 
 test("keep-visible only pauses collapsed idle plan B, never expanded plan A", () => {

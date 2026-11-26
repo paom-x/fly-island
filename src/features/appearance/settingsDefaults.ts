@@ -121,6 +121,7 @@ export const DEFAULT_SETTINGS: IslandSettings = {
   keepVisibleWhileAgentRunning: false,
   keepVisibleWhileLyrics: false,
   keepVisibleWhileTodoRunning: false,
+  keepVisibleWhileMetrics: false,
   todoEnabled: true,
   musicEnabled: true,
   agentStatusEnabled: true,

@@ -4,6 +4,7 @@ export type SettingsKeepVisibleText = {
   keepVisibleWhileAgentRunning: string;
   keepVisibleWhileLyrics: string;
   keepVisibleWhileTodoRunning: string;
+  keepVisibleWhileMetrics: string;
 };
 
 export const zhCN: SettingsKeepVisibleText = {
@@ -12,6 +13,7 @@ export const zhCN: SettingsKeepVisibleText = {
   keepVisibleWhileAgentRunning: "Agent 运行时不贴边",
   keepVisibleWhileLyrics: "显示歌词时不贴边",
   keepVisibleWhileTodoRunning: "待办计时时不贴边",
+  keepVisibleWhileMetrics: "机器占用时不贴边",
 };
 
 export const en: SettingsKeepVisibleText = {
@@ -20,4 +22,5 @@ export const en: SettingsKeepVisibleText = {
   keepVisibleWhileAgentRunning: "Stay out while an agent works",
   keepVisibleWhileLyrics: "Stay out while lyrics show",
   keepVisibleWhileTodoRunning: "Stay out while a to-do is timed",
+  keepVisibleWhileMetrics: "Stay out while the counters show",
 };

@@ -10,7 +10,7 @@ type Activity = {
   timer: TodoTimer | null;
 };
 type KeepVisibleSettings = Pick<IslandSettings, "keepVisibleWhileAgentRunning" | "keepVisibleWhileLyrics"
-  | "keepVisibleWhileTodoRunning" | "showCollapsedText" | "todoEnabled">;
+  | "keepVisibleWhileTodoRunning" | "keepVisibleWhileMetrics" | "showCollapsedText" | "todoEnabled">;
 
 /** Only holds idle tucking: navigation and game mode retain their own behavior. */
 export function keepIslandVisible(settings: KeepVisibleSettings, activity: Activity, now: number): boolean {
@@ -18,7 +18,9 @@ export function keepIslandVisible(settings: KeepVisibleSettings, activity: Activ
     || (settings.keepVisibleWhileLyrics && settings.showCollapsedText
       && activity.collapsedItem === "lyrics" && activity.songPlaying)
     || (settings.keepVisibleWhileTodoRunning && settings.todoEnabled
-      && (Boolean(activity.activeTodoId) || Boolean(activity.timer && activity.timer.endsAt > now)));
+      && (Boolean(activity.activeTodoId) || Boolean(activity.timer && activity.timer.endsAt > now)))
+    || (settings.keepVisibleWhileMetrics && settings.showCollapsedText
+      && activity.collapsedItem === "system");
 }
 
 /**
