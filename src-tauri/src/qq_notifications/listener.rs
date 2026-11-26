@@ -11,10 +11,12 @@ use std::{
 };
 use windows::{
     core::{HRESULT, HSTRING},
+    Foundation::TypedEventHandler,
     UI::Notifications::{
         KnownNotificationBindings,
         Management::{UserNotificationListener, UserNotificationListenerAccessStatus},
         NotificationKinds, NotificationSetting, ToastNotificationManager, UserNotification,
+        UserNotificationChangedEventArgs,
     },
 };
 
@@ -35,13 +37,63 @@ const DIAGNOSTIC_BODY: &str = "这是本机通道测试，不是聊天消息。"
 const SETTING_CHECK: Duration = Duration::from_secs(30);
 const SETTING_RECHECK_WHILE_BROKEN: Duration = Duration::from_secs(5);
 
+/// How long the listener may sit still before it re-reads the list on its own. Reads are woken by
+/// the system's own change event, so this only catches the cases where no event ever arrives (a
+/// listener that was never granted access, a channel that was lost).
+const SAFETY_POLL: Duration = Duration::from_secs(30);
+
+/// One live notification listener, kept open for the life of the monitor thread.
+///
+/// Opening it per read (as this used to) entered and left the Windows Runtime every second and
+/// asked the notification store for its whole list on the same beat: about 2.7% of a core on an
+/// idle machine, for a list that changes a few times an hour. The listener now stays open and
+/// the system's own change event wakes the loop; the list is re-read only when it says something
+/// happened.
+struct Channel {
+    listener: UserNotificationListener,
+    token: i64,
+    /// Held so the handler the listener registered stays alive for as long as the registration.
+    _handler: TypedEventHandler<UserNotificationListener, UserNotificationChangedEventArgs>,
+}
+
+impl Channel {
+    /// Opens the listener and asks `wake` to nudge the monitor thread whenever Windows reports a
+    /// notification change.
+    fn open(wake: &mpsc::SyncSender<()>) -> windows::core::Result<Self> {
+        let listener = UserNotificationListener::Current()?;
+        let sink = wake.clone();
+        // A full channel means a wake-up is already waiting, which is all an event has to say.
+        let handler = TypedEventHandler::new(move |_, _| {
+            let _ = sink.try_send(());
+            Ok(())
+        });
+        let token = listener.NotificationChanged(&handler)?;
+        Ok(Self {
+            listener,
+            token,
+            _handler: handler,
+        })
+    }
+
+    fn read(&self) -> Result<(NotificationStatus, Vec<QQNotification>), String> {
+        read_from(&self.listener)
+    }
+}
+
+impl Drop for Channel {
+    fn drop(&mut self) {
+        let _ = self.listener.RemoveNotificationChanged(self.token);
+    }
+}
+
 pub(super) fn monitor(service: Arc<NotificationService>, receiver: mpsc::Receiver<()>) {
     // Started at sign-in: wait for the desktop to settle first (the listener may repair QQ's
     // registration through PowerShell).
     crate::system::startup::hold_after_autostart(std::time::Duration::from_secs(30));
-    // Held for the life of the thread: each read entered and left the Windows Runtime on its own,
-    // and the last leave tore it down, so it was set up from scratch every second.
+    // Held for the life of the thread: the listener is created and dropped inside it, and the
+    // Windows Runtime would be torn down and set up again around every read otherwise.
     let _apartment = win32::com::WinRtApartment::multithreaded().ok();
+    let mut channel: Option<Channel> = None;
     let mut repair_generation = None;
     let mut repair_error = None;
     // When QQ's setting was last looked at, for which generation, and what was wrong then.
@@ -57,7 +109,18 @@ pub(super) fn monitor(service: Arc<NotificationService>, receiver: mpsc::Receive
             }
             continue;
         }
-        let poll = read_notifications();
+        if channel.is_none() {
+            channel = Channel::open(&service.wake).ok();
+        }
+        let poll = match channel.as_ref() {
+            Some(open) => open.read(),
+            // Nothing to read from: the status names it, and the safety poll tries again.
+            None => Err("Windows 通知监听不可用，正在重试。".to_string()),
+        };
+        if poll.is_err() {
+            // A lost listener is rebuilt from scratch on the next round.
+            channel = None;
+        }
         let channel_error = if matches!(&poll, Ok((NotificationStatus::Listening, _))) {
             let due = channel_check.as_ref().is_none_or(|(checked_for, at, error)| {
                 *checked_for != generation
@@ -113,9 +176,9 @@ pub(super) fn monitor(service: Arc<NotificationService>, receiver: mpsc::Receive
         if let Some((snapshot, newest)) = change {
             publish(&service, snapshot, newest);
         }
-        if receiver.recv_timeout(Duration::from_secs(1))
-            == Err(mpsc::RecvTimeoutError::Disconnected)
-        {
+        // Windows' own change event (or a settings change from the window) wakes this at once;
+        // the timeout is only the fallback for a listener that never reports anything.
+        if receiver.recv_timeout(SAFETY_POLL) == Err(mpsc::RecvTimeoutError::Disconnected) {
             return;
         }
     }
@@ -233,11 +296,21 @@ fn repair_registration(service: &NotificationService, generation: u64) -> Result
     }
 }
 
+/// Reads the notification store once. Enters the Windows Runtime on its own: the monitor thread
+/// passes its live listener to [`read_from`] instead. Kept for the live check in the tests.
+#[cfg(test)]
 pub(super) fn read_notifications() -> Result<(NotificationStatus, Vec<QQNotification>), String> {
     let _apartment = win32::com::WinRtApartment::multithreaded()
         .map_err(|error| format!("无法初始化 Windows 通知：{error}"))?;
     let listener = UserNotificationListener::Current()
         .map_err(|error| format!("Windows 通知监听不可用：{error}"))?;
+    read_from(&listener)
+}
+
+/// Reads the notification store through a listener that is already open.
+fn read_from(
+    listener: &UserNotificationListener,
+) -> Result<(NotificationStatus, Vec<QQNotification>), String> {
     let access = listener
         .GetAccessStatus()
         .map_err(|error| format!("无法检查通知权限：{error}"))?;
