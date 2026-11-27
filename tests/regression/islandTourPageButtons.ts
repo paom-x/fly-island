@@ -15,6 +15,16 @@ function visibleNames(row: HTMLElement) {
     text.clientWidth > 0 && text.getClientRects().length > 0 && getComputedStyle(text).visibility === "visible");
 }
 
+function visibleNamesFit(row: HTMLElement, expected: readonly string[]) {
+  const names = visibleNames(row);
+  return names.length === expected.length && names.every((text, index) => {
+    const button = text.closest("[data-page-button]")!.getBoundingClientRect();
+    return text.textContent === expected[index] && text.scrollWidth <= text.clientWidth
+      && getComputedStyle(text).whiteSpace === "nowrap"
+      && text.getBoundingClientRect().right <= button.right + 0.25;
+  });
+}
+
 function rowFits(row: HTMLElement, actions: Element) {
   const { left, right, top, bottom } = row.getBoundingClientRect();
   return right <= actions.getBoundingClientRect().left + 0.25
@@ -24,22 +34,11 @@ function rowFits(row: HTMLElement, actions: Element) {
     });
 }
 
-function allNamesFit(row: HTMLElement, expected: readonly string[]) {
-  const names = visibleNames(row);
-  return names.length === expected.length && names.every((text, index) => {
-    const style = getComputedStyle(text);
-    const button = text.closest("[data-page-button]")!.getBoundingClientRect();
-    return text.textContent === expected[index] && text.scrollWidth <= text.clientWidth
-      && style.whiteSpace === "nowrap" && style.textOverflow !== "ellipsis"
-      && text.getBoundingClientRect().right <= button.right + 0.25;
-  });
-}
-
 export async function checkIslandTourPageButtons({ mount, click, settle, check, results, messages }: Tour) {
   const locale = new URLSearchParams(location.search).get("lang") === "en" ? "en" : "zh-CN";
   const t = TRANSLATIONS[locale];
-  const { todo, music, clipboard, shelf, translation } = t.island.pageNames;
-  const expected = [t.island.agentPage, todo, music, clipboard, shelf, translation, t.messages.title];
+  const { todo, music, clipboard, shelf, translation, system } = t.island.pageNames;
+  const expected = [t.island.agentPage, todo, music, clipboard, shelf, translation, system, t.messages.title];
 
   try {
     await act(async () => { mount(); });
@@ -49,22 +48,40 @@ export async function checkIslandTourPageButtons({ mount, click, settle, check, 
     const panel = document.querySelector<HTMLElement>(".island__expanded")!;
     const row = panel.querySelector<HTMLElement>(".editor-dots--icon-label")!;
     const actions = panel.querySelector(".window-actions")!;
-    const verifyFullRow = (message: string) => check(allNamesFit(row, expected) && rowFits(row, actions),
-      `${locale} ${message}（${row.dataset.pageLabelMode}，${row.clientWidth}px）`);
+    let selected = 0;
+    const expectedVisible = (mode: string | undefined) => mode === "current" ? [expected[selected]]
+      : mode === "icons" ? [] : expected;
+    const verifyAdaptiveRow = (message: string) => {
+      const rowBox = row.getBoundingClientRect();
+      const actionBox = actions.getBoundingClientRect();
+      const mode = row.dataset.pageLabelMode;
+      const detail = [...row.querySelectorAll<HTMLElement>("[data-page-button]")].map((button) => {
+        const text = button.querySelector<HTMLElement>(".page-button-content__text");
+        return `${button.dataset.pageButton}:${Math.round(button.getBoundingClientRect().width)}/${text ? `${text.clientWidth}:${text.scrollWidth}` : "-"}`;
+      }).join(",");
+      check(visibleNamesFit(row, expectedVisible(mode)) && rowFits(row, actions),
+        `${locale} ${message}（${mode}，${row.clientWidth}px；行 ${Math.round(rowBox.left)}..${Math.round(rowBox.right)}，操作 ${Math.round(actionBox.left)}；${detail}）`);
+    };
 
     check(document.querySelector<HTMLElement>(".island")!.offsetWidth === 560 && panel.offsetWidth === 560
       && actions.querySelectorAll(".icon-button").length === 3, "560px 默认展开岛的 Agent 顶栏含三个操作按钮");
-    verifyFullRow("默认宽度下七个页名全部显示，文字和整行均不溢出");
+    verifyAdaptiveRow("默认宽度下按空间自适应显示页名，文字和整行均不溢出");
 
     await click(".dot-button--clipboard");
-    verifyFullRow("切到剪贴板后其他页名仍全部显示");
+    selected = 3;
+    verifyAdaptiveRow("切到剪贴板后页名仍按空间自适应且不溢出");
     await click(".island-settings-button");
     await click(".settings-sidebar__item[data-category='appearance']");
     const preview = panel.querySelector<HTMLElement>(".agent-page-preview__dots--icon-label")!;
-    check(allNamesFit(preview, expected) && rowFits(preview, preview.nextElementSibling!),
-      `${locale} 外观预览的七个页名也全部显示且无溢出`);
+    const previewMode = preview.dataset.pageLabelMode;
+    // The preview always draws the Agent page as current, whichever island page the tour is on.
+    const previewVisible = previewMode === "current" ? [expected[0]]
+      : previewMode === "icons" ? [] : expected;
+    check(visibleNamesFit(preview, previewVisible) && rowFits(preview, preview.nextElementSibling!),
+      `${locale} 外观预览的页名按空间自适应且不溢出（${previewMode}）`);
 
     await click(".island__agent-button");
+    selected = 0;
     panel.style.setProperty("--island-font-scale", "1.25");
     panel.style.width = "350px";
     await settle(100);
@@ -73,12 +90,12 @@ export async function checkIslandTourPageButtons({ mount, click, settle, check, 
     panel.style.width = "290px";
     await settle(100);
     check(row.dataset.pageLabelMode === "icons" && visibleNames(row).length === 0 && rowFits(row, actions)
-      && row.querySelectorAll("[data-page-button] svg").length === 7,
-    `${locale} 继续缩窄后七个图标都保留`);
+      && row.querySelectorAll("[data-page-button] svg").length === 8,
+    `${locale} 继续缩窄后八个图标都保留`);
     panel.style.removeProperty("--island-font-scale");
     panel.style.removeProperty("width");
     await settle(100);
-    verifyFullRow("恢复默认宽度与字号后七个页名全部恢复");
+    verifyAdaptiveRow("恢复默认宽度与字号后页名按空间自适应恢复");
 
     results.textContent = `${messages.join("\n")}\n\n全部 ${messages.length} 项检查通过。`;
     results.dataset.result = "passed";

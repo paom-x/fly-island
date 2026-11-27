@@ -19,7 +19,24 @@ export type IslandText = {
   clipboardHistory: string;
   shelf: string;
   /** Short page names in the tips above the header dots. */
-  pageNames: { todo: string; music: string; clipboard: string; shelf: string; translation: string };
+  pageNames: { todo: string; music: string; clipboard: string; shelf: string; translation: string; system: string };
+  /** The machine page: one card per counter, each with the last two minutes behind it. */
+  systemPage: {
+    title: string;
+    reading: string;
+    cpu: string;
+    memory: string;
+    network: string;
+    gpu: string;
+    temperature: string;
+    unavailable: string;
+    memoryDetail: (used: string, total: string) => string;
+    trend: (from: string, to: string) => string;
+    oneReading: string;
+    networkTrend: string;
+    note: string;
+    noteWithoutTemperature: string;
+  };
   /** The tip on the status light, which opens the Agent page. */
   agentPage: string;
   calendar: string;
@@ -48,7 +65,23 @@ export const zhCN: IslandText = {
   music: "Music",
   clipboardHistory: "剪贴板历史",
   shelf: "文件中转",
-  pageNames: { todo: "待办", music: "音乐", clipboard: "剪贴板", shelf: "文件中转", translation: "翻译" },
+  pageNames: { todo: "待办", music: "音乐", clipboard: "剪贴板", shelf: "文件中转", translation: "翻译", system: "机器占用" },
+  systemPage: {
+    title: "机器占用",
+    reading: "正在读…",
+    cpu: "处理器",
+    memory: "内存",
+    network: "网络",
+    gpu: "显卡",
+    temperature: "温度",
+    unavailable: "读不到",
+    memoryDetail: (used, total) => `已用 ${used} / ${total} GB`,
+    trend: (from, to) => `两分钟里从 ${from} 变到 ${to}`,
+    oneReading: "刚开始记录这条曲线",
+    networkTrend: "两分钟内的下载速度",
+    note: "每 2 秒读一次，只画最近 2 分钟；离开这个页面就停止读取。",
+    noteWithoutTemperature: "每 2 秒读一次，只画最近 2 分钟；离开这个页面就停止读取。这台电脑没有能读到的温度传感器。",
+  },
   agentPage: "AI Agent",
   calendar: "日历",
   shelfCount: (count) => `文件中转里有 ${count} 个文件`,
@@ -75,7 +108,23 @@ export const en: IslandText = {
   music: "Music",
   clipboardHistory: "Clipboard history",
   shelf: "File shelf",
-  pageNames: { todo: "Todo", music: "Music", clipboard: "Clipboard", shelf: "File shelf", translation: "Translate" },
+  pageNames: { todo: "Todo", music: "Music", clipboard: "Clipboard", shelf: "File shelf", translation: "Translate", system: "Machine load" },
+  systemPage: {
+    title: "Machine load",
+    reading: "Reading…",
+    cpu: "Processor",
+    memory: "Memory",
+    network: "Network",
+    gpu: "Graphics",
+    temperature: "Temperature",
+    unavailable: "No reading",
+    memoryDetail: (used, total) => `${used} of ${total} GB in use`,
+    trend: (from, to) => `From ${from} to ${to} over two minutes`,
+    oneReading: "Still drawing this one",
+    networkTrend: "Download speed over two minutes",
+    note: "A reading every two seconds, drawing the last two minutes; closing the page stops it.",
+    noteWithoutTemperature: "A reading every two seconds, drawing the last two minutes; closing the page stops it. This computer has no readable temperature sensor.",
+  },
   agentPage: "AI Agent",
   calendar: "Calendar",
   shelfCount: (count) => (count === 1 ? "1 file on the shelf" : `${count} files on the shelf`),

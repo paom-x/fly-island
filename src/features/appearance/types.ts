@@ -61,7 +61,7 @@ export type CollapsedItem = "agent" | "lyrics" | "todo" | "system";
  */
 export type CollapsedSlot = "pulse" | "text" | "mail" | "shelf" | "music" | "agents" | "clock" | "weather";
 /** The page dots in the expanded island's header, which the user can drag into any order. */
-export type PageDot = "todo" | "music" | "clipboard" | "shelf" | "translation";
+export type PageDot = "todo" | "music" | "clipboard" | "shelf" | "translation" | "system";
 
 /**
  * How much of a notification the island reads. `unread` keeps only that one arrived;

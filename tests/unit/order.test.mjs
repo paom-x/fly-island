@@ -36,12 +36,12 @@ test("the collapsed island's order, cover, counters and the page dots load with 
   assert.deepEqual(normalizeSettings({ systemMetrics: ["memory", "cpu", "memory", "nope"] }).systemMetrics, ["memory", "cpu"]);
   assert.equal(settings.collapsedShowCover, true);
   assert.equal(normalizeSettings({ collapsedShowCover: false }).collapsedShowCover, false);
-  assert.deepEqual(settings.pageOrder, ["todo", "music", "clipboard", "shelf", "translation"]);
+  assert.deepEqual(settings.pageOrder, ["todo", "music", "clipboard", "shelf", "translation", "system"]);
   const saved = normalizeSettings({ collapsedPriority: ["todo"], collapsedShowCover: true, pageOrder: ["shelf", "todo"] });
   assert.deepEqual(saved.collapsedPriority, ["todo", "agent", "lyrics", "system"]);
   assert.equal(saved.collapsedShowCover, true);
   // Orders saved before translation had a capsule get it at the end.
-  assert.deepEqual(saved.pageOrder, ["shelf", "todo", "music", "clipboard", "translation"]);
+  assert.deepEqual(saved.pageOrder, ["shelf", "todo", "music", "clipboard", "translation", "system"]);
 });
 
 test("page buttons keep each supported style and default to icons", () => {

@@ -166,10 +166,10 @@
 
 | 文档 | 实际路径 | 维护人/更新触发 | 最近审计日期 |
 | --- | --- | --- | --- |
-| 《项目说明文档》 | `README.md`（另 `README.en.md`） | 功能、环境要求、构建方式变更 | 2026-11-26 |
-| 《技术文档》 | 分册：`docs/architecture/overview.md`（架构）、`contracts.md`（对外契约）、`data-storage.md`（数据存放）、`docs/plugins/*`（插件 API 与清单）、`src/AGENTS.md` 与 `src-tauri/AGENTS.md`（分层与边界） | 架构、接口、配置变更 | 2026-11-26 |
-| 《软件内说明书》 | 分册：`README.md` 的功能章节 + `docs/design/<区域>.md`（界面行为）+ `docs/*.md` 专题（如 `file-shelf.md`、`todo-timer.md`） | 界面、文案、参数变更 | 2026-11-26 |
-| `AGENTS.md` | `AGENTS.md`（含本表） | 工程约定变更 | 2026-11-26 |
+| 《项目说明文档》 | `README.md`（另 `README.en.md`） | 功能、环境要求、构建方式变更 | 2026-11-27 |
+| 《技术文档》 | 分册：`docs/architecture/overview.md`（架构）、`contracts.md`（对外契约）、`data-storage.md`（数据存放）、`docs/plugins/*`（插件 API 与清单）、`src/AGENTS.md` 与 `src-tauri/AGENTS.md`（分层与边界） | 架构、接口、配置变更 | 2026-11-27 |
+| 《软件内说明书》 | 分册：`README.md` 的功能章节 + `docs/design/<区域>.md`（界面行为）+ `docs/*.md` 专题（如 `file-shelf.md`、`todo-timer.md`） | 界面、文案、参数变更 | 2026-11-27 |
+| `AGENTS.md` | `AGENTS.md`（含本表） | 工程约定变更 | 2026-11-27 |
 
 差异说明：
 

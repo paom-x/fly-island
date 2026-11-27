@@ -10,6 +10,7 @@ export const PAGE_BUTTONS: Record<IslandPage, string> = {
   music: ".dot-button--music",
   clipboard: ".dot-button--clipboard",
   shelf: ".dot-button--shelf",
+  system: ".dot-button--system",
   // A page button since messages joined the page row; the header button before that.
   qq: ".dot-button--messages, .island-message-button",
   // A page capsule since the translate button became one; the header button before that.

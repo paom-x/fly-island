@@ -29,6 +29,8 @@ export function getShelfExpandedHeight(items: number) {
 }
 // Header, direction bar, a few lines of source, the result and the action row.
 const TRANSLATION_EXPANDED_ISLAND_HEIGHT = 420;
+// The machine page: two rows of reading cards plus the line under them (SystemDashboard.css).
+const SYSTEM_EXPANDED_ISLAND_HEIGHT = 330;
 // Settings fit their open page (useSettingsPageHeight): the island's padding, header and gap
 // around it, between a floor that keeps short pages from looking cramped and about the tallest
 // island the window allows, past which the page scrolls. The fallback before the first measure.
@@ -153,6 +155,8 @@ export function getExpandedIslandHeight({
         ? Math.min(getShelfExpandedHeight(shelfItems), maxPanelHeight)
       : page === "translation"
         ? Math.min(TRANSLATION_EXPANDED_ISLAND_HEIGHT, maxPanelHeight)
+      : page === "system"
+        ? Math.min(SYSTEM_EXPANDED_ISLAND_HEIGHT, maxPanelHeight)
       : page === "agents"
         ? agentAlertRowHeight !== undefined
           ? getAgentAlertExpandedHeight(agentAlertRowHeight)

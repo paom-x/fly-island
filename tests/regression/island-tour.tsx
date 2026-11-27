@@ -57,7 +57,7 @@ localStorage.setItem("fly-island-settings", JSON.stringify({
   topEdgeShoulders: query.has("shoulders") || query.has("shoulderSweep") || query.has("shapePerf"), topEdgeShoulderSize: 20,
   ...(query.has("capsule") ? { islandShape: "capsule" } : {}),
   tuckStyle,
-  pageButtonStyle: query.get("pageButtons") === "iconLabel" ? "iconLabel" : "capsule",
+  pageButtonStyle: query.get("pageButtons") === "iconLabel" ? "iconLabel" : "capsule", systemMetrics: query.get("pageButtons") === "iconLabel" ? ["cpu"] : [],
   // The waiting session would pop the Agent page open at a random moment and race the geometry checks.
   agentAlertWaiting: false, agentAlertCompleted: false, agentAlertFailed: false,
   lyricsOnline: query.get("lyrics") !== "0",
@@ -249,7 +249,8 @@ if (query.has("shoulderSweep") || query.has("shapePerf")) {
     };
     await drag(".dot-button--todo", ".dot-button--clipboard");
     const savedOrder = JSON.parse(localStorage.getItem("fly-island-settings") ?? "{}").pageOrder as string[] | undefined;
-    check(dotOrder().join() === "music,clipboard,todo,shelf,translation" && savedOrder?.join() === "music,clipboard,todo,shelf,translation" && island().className === pageBefore,
+    const dragged = "music,clipboard,todo,shelf,translation"; // no machine dot in the tour
+    check(dotOrder().join() === dragged && savedOrder?.filter((page) => page !== "system").join() === dragged && island().className === pageBefore,
       `拖动页面圆点可以调整顺序并保存，拖完不切页（${dotOrder().join()}）`);
     await drag(".dot-button--todo", ".dot-button--music");
     check(dotOrder()[0] === "todo", "圆点可以拖回原来的位置");
@@ -338,7 +339,7 @@ if (query.has("shoulderSweep") || query.has("shapePerf")) {
     await click('[aria-label="页面按钮"] button:nth-child(2)');
     const savedStyle = JSON.parse(localStorage.getItem("fly-island-settings") ?? "{}").pageButtonStyle;
     check(document.querySelectorAll(".dot-button--icon svg, .island__agent-button svg.lucide-bot").length === 7 &&
-      document.querySelectorAll(".agent-page-preview__dots svg").length === 5 && savedStyle === "icon", "七个入口切换为图标，外观预览和保存同步");
+      document.querySelectorAll(".agent-page-preview__dots svg").length === 6 && savedStyle === "icon", "七个入口切换为图标，外观预览和保存同步");
     await click('[aria-label="页面按钮"] button:first-child');
     const priority = () => [...document.querySelectorAll<HTMLElement>(".reorder-list__item")].map((item) => item.dataset.reorderId);
     check(priority().join() === "agent,lyrics,todo,system", "外观页列出收起时的显示顺序：Agent 任务、歌词、待办、机器占用");

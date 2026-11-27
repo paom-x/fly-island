@@ -60,8 +60,9 @@ export function useIslandFeatures({
     qqMail: settings.mailEnabled,
     agents: settings.agentStatusEnabled,
     translation: settings.translationEnabled && settings.translationTarget === "island",
+    system: settings.systemMetrics.length > 0,
     pluginPages,
-  }), [clipboardEnabled, qqEnabled, settings.agentStatusEnabled, settings.mailEnabled, settings.musicEnabled, settings.shelfEnabled, settings.todoEnabled, settings.translationEnabled, settings.translationTarget, wechatEnabled, hasPluginMessages, pluginPages, office.dingtalk, office.feishu, office.wecom]);
+  }), [clipboardEnabled, qqEnabled, settings.agentStatusEnabled, settings.mailEnabled, settings.musicEnabled, settings.shelfEnabled, settings.todoEnabled, settings.translationEnabled, settings.translationTarget, settings.systemMetrics.length, wechatEnabled, hasPluginMessages, pluginPages, office.dingtalk, office.feishu, office.wecom]);
 
   useEffect(() => {
     const next = islandPageFor(page, features, settings.clipboardDetached);

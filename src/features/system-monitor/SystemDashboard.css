@@ -1,0 +1,187 @@
+/* The machine page: a small grid of readings, each with the last two minutes behind it. */
+.system-dashboard {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text-1);
+}
+
+.system-dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-height: 0;
+}
+
+.system-dashboard__card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-white-a10);
+  border-radius: var(--corner-xl);
+  corner-shape: var(--corner-shape);
+  background: var(--color-white-a06);
+}
+
+.system-dashboard__card--network {
+  grid-column: span 2;
+}
+
+/* Five counters in two rows of three: the network card takes the two left cells and
+   the temperature card the right one, so nothing spills past the island. */
+
+.system-dashboard__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.system-dashboard__icon {
+  display: inline-flex;
+  color: var(--text-2);
+}
+
+.system-dashboard__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(11px * var(--island-font-scale, 1));
+  color: var(--text-2);
+}
+
+.system-dashboard__value {
+  margin-left: auto;
+  font-size: calc(19px * var(--island-font-scale, 1));
+  line-height: 1.1;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.system-dashboard__detail {
+  font-size: calc(10px * var(--island-font-scale, 1));
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.system-dashboard__rates {
+  display: flex;
+  gap: 14px;
+  font-size: calc(12px * var(--island-font-scale, 1));
+  font-variant-numeric: tabular-nums;
+}
+
+.system-dashboard__rate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2);
+}
+
+.system-spark {
+  position: relative;
+  height: 44px;
+  margin-top: auto;
+}
+
+.system-spark--empty {
+  height: 44px;
+  border-radius: var(--corner-lg);
+  background: var(--color-white-a04);
+}
+
+.system-spark__svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: block;
+  cursor: crosshair;
+}
+
+/* Circles and strokes live inside the svg now: the real-pixel viewBox keeps them from stretching. */
+.system-spark__line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.system-spark__end {
+  fill: var(--color-accent);
+}
+
+.system-spark__halo {
+  fill: color-mix(in srgb, var(--color-accent) 26%, transparent);
+}
+
+/* Hover feedback fades in instead of appearing abruptly; display:none would jump the layout. */
+.system-spark__guide {
+  stroke: color-mix(in srgb, var(--text-1) 22%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.system-spark__guide.on {
+  opacity: 1;
+}
+
+.system-spark__hover {
+  fill: var(--color-surface-dark);
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.system-spark__hover.on {
+  opacity: 1;
+}
+
+.system-spark__tip {
+  position: absolute;
+  transform: translate(-50%, -130%);
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--text-1);
+  color: var(--color-surface-dark);
+  font-size: calc(9px * var(--island-font-scale, 1));
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.system-spark__tip.on {
+  opacity: 1;
+}
+
+.system-dashboard__note {
+  margin: 0;
+  font-size: calc(10px * var(--island-font-scale, 1));
+  color: var(--text-2);
+}
+
+.system-dashboard__empty {
+  margin: 0;
+  padding: 24px 0;
+  text-align: center;
+  font-size: calc(11px * var(--island-font-scale, 1));
+  color: var(--text-2);
+}
+
+/* The sparkline spec's compact card: only very short viewports grow past the island's 44px. */
+@media (max-height: 420px) {
+  .system-spark,
+  .system-spark--empty {
+    height: 48px;
+  }
+}

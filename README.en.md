@@ -53,7 +53,7 @@ The iPhone's Dynamic Island gathers notifications, timers and media controls int
 ## Most of the time, it's tiny
 
 When you're not using it, it's just a small pill at the top of the screen showing the song that's playing, unread messages and how many AI agents are working.
-When you want real numbers instead, it can cycle through the processor, memory, network speed and graphics load.
+When you want real numbers instead, it can cycle through the processor, memory, network speed and graphics load. Expand it and there's also a Machine load page with the last two minutes of trends.
 
 <p align="center"><img src="docs/assets/screenshots/collapsed.webp" alt="The collapsed island showing the current song, unread count and agent count" width="560"></p>
 
